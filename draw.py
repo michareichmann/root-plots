@@ -4,11 +4,15 @@
 # created on February 15th 2018 by M. Reichmann (remichae@phys.ethz.ch)
 # --------------------------------------------------------
 
+from inspect import signature
+from os.path import join
+from typing import Any
+
 from ROOT import TGraphErrors, TGaxis, TLatex, TGraphAsymmErrors, TCanvas, gStyle, TLegend, TArrow, TPad, TCutG, TLine, TPaveText, TPaveStats, TH1F, TEllipse, TColor, TProfile
-from ROOT import TProfile2D, TH2F, TH3F, THStack, TMultiGraph, TPie, gROOT
-from numpy import sign, linspace, ones, ceil, append, tile, absolute, rot90, flip, argsort
-from typing import Any, List
-from helpers.utils import *
+from ROOT import TProfile2D, TH2F, TH3F, THStack, TMultiGraph, TPie, gROOT, TF1
+from numpy import sign, linspace, ones, ceil, append, tile, absolute, rot90, flip, argsort, ndarray, arange, diff, pi, frombuffer, mean, concatenate, where
+
+from plotting.utils import *
 
 
 class FitRes(ndarray):
@@ -91,13 +95,13 @@ def load_resolution(default=800):
 
 class Draw(object):
 
+    Dir = dirname(realpath(__file__))
     Verbose = False
     Config = None
     Count = {}
     Res = load_resolution()
     Colors = get_color_gradient()
     Objects = []
-    Dir = get_base_dir()
     Show = True
 
     Title = True
@@ -108,11 +112,11 @@ class Draw(object):
     DefaultStats = {'x2': None, 'y2': None, 'h': None, 'w': .3, 'entries': False, 'm': False, 'rms': False, 'all_stat': True, 'fit': False, 'center_x': False, 'center_y': False, 'form': None}
     Stats = {}
 
-    def __init__(self, config='', verbose=True):
+    def __init__(self, config=None, verbose=True):
 
         # Basics
         Draw.Verbose = verbose
-        Draw.Config = Config(choose(config, default=join(Draw.Dir, 'config', 'main.ini')))
+        Draw.Config = Config(choose(config, default=join(Draw.Dir, 'main.ini')))
 
         # Settings
         self.IColor = 0  # color index
@@ -136,6 +140,9 @@ class Draw(object):
         if th.ClassName() in self.Dic:
             return self.Dic[th.ClassName()](th, *args, **kwargs)
         return Draw.histo(th, *args, **kwargs)
+
+    def __repr__(self):
+        return f'ROOT drawing instance: Title = {get_stat(Draw.Title)}, Show = {get_stat(Draw.Show)}, Legend = {get_stat(Draw.Legend)}'
 
     @staticmethod
     def add(*args):
@@ -1310,4 +1317,4 @@ def set_root_output(status=True):
 
 
 if __name__ == '__main__':
-    z = Draw(join(Draw.Dir, 'config', 'main.ini'))
+    z = Draw()

@@ -4,7 +4,7 @@
 # created on September 25th 2020 by M. Reichmann (remichae@phys.ethz.ch)
 # --------------------------------------------------------
 
-from os.path import expanduser, basename, isfile
+from os.path import expanduser, basename, isdir
 from helpers.info_legend import InfoLegend
 from plotting.draw import *
 import helpers.html as html
@@ -77,7 +77,7 @@ class SaveDraw(Draw):
     def server_is_mounted():
         if SaveDraw.MountExists is not None:
             return SaveDraw.MountExists
-        SaveDraw.MountExists = dir_exists(join(SaveDraw.ServerMountDir, 'data'))
+        SaveDraw.MountExists = isdir(join(SaveDraw.ServerMountDir, 'data'))
         if not SaveDraw.MountExists:
             warning('Diamond server is not mounted in {}'.format(SaveDraw.ServerMountDir))
 
@@ -158,6 +158,11 @@ class SaveDraw(Draw):
     @staticmethod
     def save_last(canvas=None, ext='pdf'):
         filename = input(f'Enter the name of the {ext}-file: ')
-        choose(canvas, get_last_canvas()).SaveAs(join(Dir, f'{filename.split(".")[0]}.{ext}'))
+        choose(canvas, get_last_canvas()).SaveAs(join(BaseDir, f'{filename.split(".")[0]}.{ext}'))
     # endregion SAVE
     # ----------------------------------------
+
+
+if __name__ == '__main__':
+    # todo: should work without ana instance
+    z = SaveDraw()

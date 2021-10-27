@@ -1,0 +1,220 @@
+# --------------------------------------------------------
+#       PLOTTING UTILITY FUNCTIONS
+# created on October 27th 2021 by M. Reichmann
+# --------------------------------------------------------
+from configparser import ConfigParser, NoOptionError, NoSectionError
+from copy import deepcopy
+from datetime import datetime
+from json import loads
+from os import _exit, makedirs, remove
+from os.path import dirname, realpath, exists, isfile
+from time import time
+
+from numpy import array, zeros, count_nonzero, sqrt, average, full, all, quantile, arctan2, cos, sin
+from uncertainties import ufloat_fromstr, ufloat
+from uncertainties.core import Variable, AffineScalarFunc
+
+BaseDir = dirname(dirname(realpath(__file__)))
+
+ON = True
+OFF = False
+
+GREEN = '\033[92m'
+WHITE = '\033[98m'
+ENDC = '\033[0m'
+YELLOW = '\033[93m'
+CYAN = '\033[96m'
+RED = '\033[91m'
+UP1 = '\033[1A'
+ERASE = '\033[K'
+
+
+def get_t_str():
+    return datetime.now().strftime('%H:%M:%S')
+
+
+def colored(txt, color):
+    return f'{color}{txt}{ENDC}'
+
+
+def prnt_msg(txt, head, color=None, blank_lines=0, endl=True, prnt=True):
+    if prnt:
+        print('\n' * blank_lines + f'\r{color}{head}:{ENDC} {get_t_str()} --> {txt}', end='\n' if endl else ' ')
+
+
+def info(txt, blank_lines=0, endl=True, prnt=True):
+    prnt_msg(txt, 'INFO', GREEN, blank_lines, endl, prnt)
+    return time()
+
+
+def add_to_info(t, msg='Done', prnt=True):
+    if prnt:
+        print('{m} ({t:2.2f} s)'.format(m=msg, t=time() - t))
+
+
+def warning(txt, blank_lines=0, prnt=True):
+    prnt_msg(txt, 'WARNING', YELLOW, blank_lines, prnt=prnt)
+
+
+def critical(txt):
+    prnt_msg(txt, 'CRITICAL', RED)
+    _exit(2)
+
+
+def get_stat(status):
+    return 'ON' if status else 'OFF'
+
+
+def choose(v, default, decider='None', *args, **kwargs):
+    use_default = decider is None if decider != 'None' else v is None  # noqa
+    if callable(default) and use_default:
+        default = default(*args, **kwargs)
+    return default if use_default else v(*args, **kwargs) if callable(v) else v
+
+
+def round_up_to(num, val=1):
+    return int(num) // val * val + val
+
+
+def do(fs, pars, exe=-1):
+    fs, pars = ([fs], [pars]) if type(fs) is not list else (fs, pars)  # noqa
+    exe = pars if exe == -1 else [exe]
+    for f, p, e in zip(fs, pars, exe):
+        f(p) if e is not None else do_nothing()
+
+
+def do_nothing():
+    pass
+
+
+def is_iter(v):
+    try:
+        iter(v)
+        return True
+    except TypeError:
+        return False
+
+
+def is_ufloat(value):
+    return type(value) in [Variable, AffineScalarFunc]
+
+
+def uarr2n(arr):
+    return array([i.n for i in arr]) if len(arr) and is_ufloat(arr[0]) else arr
+
+
+def make_ufloat(n, s=0):
+    return array([ufloat(*v) for v in array([n, s]).T]) if is_iter(n) else n if is_ufloat(n) else ufloat(n, s)
+
+
+def make_list(value):
+    return array([value], dtype=object).flatten()
+
+
+def prep_kw(dic, **default):
+    d = deepcopy(dic)
+    for kw, value in default.items():
+        if kw not in d:
+            d[kw] = value
+    return d
+
+
+def mean_sigma(values, weights=None, err=True):
+    """ Return the weighted average and standard deviation. values, weights -- Numpy ndarrays with the same shape. """
+    if len(values) == 1:
+        value = make_ufloat(values[0])
+        return (value, ufloat(value.s, 0)) if err else (value.n, value.s)
+    weights = full(len(values), 1) if weights is None else weights
+    if is_ufloat(values[0]):
+        errors = array([v.s for v in values])
+        weights = full(errors.size, 1) if all(errors == errors[0]) else [1 / e if e else 0 for e in errors]
+        values = array([v.n for v in values], 'd')
+    if all(weights == 0):
+        return [0, 0]
+    avrg = average(values, weights=weights)
+    sigma = sqrt(average((values - avrg) ** 2, weights=weights))  # Fast and numerically precise
+    m, s = ufloat(avrg, sigma / (sqrt(len(values)) - 1)), ufloat(sigma, sigma / sqrt(2 * len(values)))
+    return (m, s) if err else (m.n, s.n)
+
+
+def calc_eff(k=0, n=0, values=None):
+    values = array(values) if values is not None else None
+    if n == 0 and (values is None or not values.size):
+        return zeros(3)
+    k = float(k if values is None else count_nonzero(values))
+    n = float(n if values is None else values.size)
+    m = (k + 1) / (n + 2)
+    mode = k / n
+    s = sqrt(((k + 1) / (n + 2) * (k + 2) / (n + 3) - ((k + 1) ** 2) / ((n + 2) ** 2)))
+    return array([mode, max(s + (mode - m), 0), max(s - (mode - m), 0)]) * 100
+
+
+def freedman_diaconis(x):
+    return 2 * (quantile(x, .75) - quantile(x, .25)) / x.size ** (1 / 3)
+
+
+def cart2pol(x, y):
+    return array([sqrt(x ** 2 + y ** 2), arctan2(y, x)])
+
+
+def pol2cart(rho, phi):
+    return array([rho * cos(phi), rho * sin(phi)])
+
+
+def get_x(x1, x2, y1, y2, y):
+    return (x2 - x1) / (y2 - y1) * (y - y1) + x1
+
+
+def get_y(x1, x2, y1, y2, x):
+    return get_x(y1, y2, x1, x2, x)
+
+
+def ensure_dir(path):
+    if not exists(path):
+        info('Creating directory: {d}'.format(d=path))
+        makedirs(path)
+    return path
+
+
+def remove_file(file_path, prnt=True):
+    if isfile(file_path):
+        warning('removing {}'.format(file_path), prnt=prnt)
+        remove(file_path)
+
+
+class Config(ConfigParser):
+
+    def __init__(self, file_name, **kwargs):
+        super(Config, self).__init__(**kwargs)
+        self.FileName = file_name
+        self.read(file_name) if type(file_name) is not list else self.read_file(file_name)
+
+    def get_value(self, section, option, dtype: type = str, default=None):
+        dtype = type(default) if default is not None else dtype
+        try:
+            if dtype is bool:
+                return self.getboolean(section, option)
+            v = self.get(section, option)
+            return loads(v) if dtype == list or '[' in v and dtype is not str else dtype(v)
+        except (NoOptionError, NoSectionError):
+            return default
+
+    def get_values(self, section):
+        return [j for i, j in self.items(section)]
+
+    def get_list(self, section, option, default=None):
+        return self.get_value(section, option, list, choose(default, []))
+
+    def get_ufloat(self, section, option, default=None):
+        return ufloat_fromstr(self.get_value(section, option, default=default))
+
+    def show(self):
+        for key, section in self.items():
+            print(colored(f'[{key}]', YELLOW))
+            for option in section:
+                print(f'{option} = {self.get(key, option)}')
+            print()
+
+    def write(self, file_name=None, space_around_delimiters=True):
+        with open(choose(file_name, self.FileName), 'w') as f:
+            super(Config, self).write(f, space_around_delimiters)
