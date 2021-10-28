@@ -1217,10 +1217,11 @@ def get_object(name):
         return None if o.__class__.Class_Name() == 'TObject' else o
 
 
-def set_time_axis(histo, form='%H:%M', off=0):
-    histo.GetXaxis().SetTimeFormat(form)
-    histo.GetXaxis().SetTimeOffset(-off - 3600 if off else 0)
-    histo.GetXaxis().SetTimeDisplay(1)
+def set_time_axis(histo, form='%H:%M', off=0, axis='X'):
+    ax = getattr(histo, f'Get{axis.upper()}axis')()
+    ax.SetTimeFormat(form)
+    ax.SetTimeOffset(-off - 3600 if off else 0)
+    ax.SetTimeDisplay(1)
 
 
 def find_mpv_fwhm(histo, bins=15):
