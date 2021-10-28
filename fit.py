@@ -1,7 +1,9 @@
 #!/usr/bin/env python
 from ROOT import TF1, Math, TMath
 from scipy.special import erf
+from numpy import exp
 from plotting.draw import *
+from functools import partial
 
 
 class Fit(object):
@@ -9,7 +11,7 @@ class Fit(object):
     def __init__(self, name='fit', h=None, fit_range=None, npx=1000, invert=False, par_names=None):
         self.Name = name
         self.Histo = h
-        self.Draw = Draw(join(get_base_dir(), 'config', 'main.ini'))
+        self.Draw = Draw(join(BaseDir, 'config', 'main.ini'))
 
         # Range and Values
         self.XMin, self.XMax = [0, 1000] if fit_range is None else fit_range
@@ -257,6 +259,10 @@ class NLandau(Fit):
 def erfland(x, pars):
     c0, mpv, sigma, c1, xoff, w, yoff, x0 = [float(p) for p in pars]
     return yoff + (c0 * TMath.Landau(x[0], mpv, sigma) if x[0] > x0 else c1 * (erf(w * (x[0] - xoff)) + 1))
+
+
+def gauss(x, scale, mean_, sigma, off=0):
+    return scale * exp(-.5 * ((x - mean_) / sigma) ** 2) + off
 
 
 def crystalball(x, pars, inv=False):
