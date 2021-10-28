@@ -11,6 +11,7 @@ from typing import Any
 from ROOT import TGraphErrors, TGaxis, TLatex, TGraphAsymmErrors, TCanvas, gStyle, TLegend, TArrow, TPad, TCutG, TLine, TPaveText, TPaveStats, TH1F, TEllipse, TColor, TProfile
 from ROOT import TProfile2D, TH2F, TH3F, THStack, TMultiGraph, TPie, gROOT, TF1
 from numpy import sign, linspace, ones, ceil, append, tile, absolute, rot90, flip, argsort, ndarray, arange, diff, pi, frombuffer, mean, concatenate, where
+from screeninfo import get_monitors, Monitor, common
 
 from plotting.utils import *
 
@@ -84,26 +85,19 @@ def get_color_gradient():
     return array([color_gradient + ij for ij in range(255)])
 
 
-def load_resolution(default=800):
-    try:
-        from screeninfo import get_monitors
-        return int(round_up_to(get_monitors()[0].height // 2, 100))
-    except Exception as err:
-        warning(err)
-        return default
-
-
 class Draw(object):
 
     Dir = dirname(realpath(__file__))
     Verbose = False
     Config = None
+    Monitor = None
+    Res = None
+
     Count = {}
-    Res = load_resolution()
     Colors = get_color_gradient()
     Objects = []
-    Show = True
 
+    Show = True
     Title = True
     Legend = False
     FillColor = 871
@@ -114,20 +108,23 @@ class Draw(object):
 
     def __init__(self, config=None, verbose=True):
 
-        # Basics
-        Draw.Verbose = verbose
-        Draw.Config = Config(choose(config, default=join(Draw.Dir, 'main.ini')))
+        if Draw.Config is None:  # only run the setup once
+            # Basics
+            Draw.Verbose = verbose
+            Draw.Config = Config(choose(config, default=join(Draw.Dir, 'main.ini')))
 
-        # Settings
+            # Settings
+            Draw.Title = Draw.Config.get_value('SAVE', 'activate title', default=True)
+            Draw.Legend = Draw.Config.get_value('SAVE', 'info legend', default=False)
+            Draw.FillColor = Draw.Config.get_value('PLOTS', 'fill color', default=821)
+            Draw.Font = Draw.Config.get_value('PLOTS', 'legend font', default=42)
+            Draw.Show = Draw.Config.get_value('SAVE', 'show', default=True)
+            Draw.Monitor = Draw.find_monitor()
+            Draw.Res = Draw.load_resolution()
+
+            Draw.setup()
+
         self.IColor = 0  # color index
-        Draw.Title = Draw.Config.get_value('SAVE', 'activate title', default=True)
-        Draw.Legend = Draw.Config.get_value('SAVE', 'info legend', default=False)
-        Draw.FillColor = Draw.Config.get_value('PLOTS', 'fill color', default=821)
-        Draw.Font = Draw.Config.get_value('PLOTS', 'legend font', default=42)
-        Draw.Show = Draw.Config.get_value('SAVE', 'show', default=True)
-
-        Draw.setup()
-
         self.Dic = {'TH1F': self.distribution, 'TH1I': self.distribution, 'TH1D': self.distribution,
                     'TH1': self.function,
                     'TGraph': self.graph, 'TGraphErrors': self.graph, 'TGraphAsymmErrors': self.graph,
@@ -142,7 +139,26 @@ class Draw(object):
         return Draw.histo(th, *args, **kwargs)
 
     def __repr__(self):
-        return f'ROOT drawing instance: Title = {get_stat(Draw.Title)}, Show = {get_stat(Draw.Show)}, Legend = {get_stat(Draw.Legend)}'
+        return f'ROOT {self.__class__.__name__} instance: Title = {get_stat(Draw.Title)}, Show = {get_stat(Draw.Show)}, Legend = {get_stat(Draw.Legend)}'
+
+    # ----------------------------------------
+    # region INIT
+    @staticmethod
+    def find_monitor():
+        try:
+            monitors = sorted(get_monitors(), key=lambda mon: mon.x)
+            imon = Draw.Config.get_value('DRAW', 'monitor number', int, default=0)
+            return monitors[imon if imon < len(monitors) else 0]
+        except common.ScreenInfoError:
+            return Monitor(0, 0, 1366, 768)
+
+    @staticmethod
+    def load_resolution():
+        """ returns: default plot height in pixels."""
+        h = Draw.Config.get_value('DRAW', 'plot height ndc', float, default=.7)
+        return int(Draw.Monitor.height * h)
+    # endregion INIT
+    # ----------------------------------------
 
     @staticmethod
     def add(*args):
