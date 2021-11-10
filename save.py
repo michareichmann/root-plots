@@ -29,7 +29,7 @@ class SaveDraw(Draw):
         self.Legends = InfoLegend(analysis)
 
         # Results
-        self.ResultsDir = join(Draw.Dir, 'Results', choose(results_dir, default=analysis.TCString))
+        self.ResultsDir = join(BaseDir, 'Results', choose(results_dir, default=analysis.TCString))
         self.SubDir = str(sub_dir)
 
         # Server
