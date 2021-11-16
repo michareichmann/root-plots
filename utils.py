@@ -182,6 +182,10 @@ def remove_file(file_path, prnt=True):
         remove(file_path)
 
 
+def add_spaces(s):
+    return ''.join(f' {s[i]}' if i and (s[i].isupper() or s[i].isdigit()) and not s[i - 1].isdigit() and not s[i - 1].isupper() else s[i] for i in range(len(s)))
+
+
 class Config(ConfigParser):
 
     def __init__(self, file_name, **kwargs):

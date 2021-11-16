@@ -13,7 +13,7 @@ from ROOT import TProfile2D, TH2F, TH3F, THStack, TMultiGraph, TPie, gROOT, TF1
 from numpy import sign, linspace, ones, ceil, append, tile, absolute, rot90, flip, argsort, ndarray, arange, diff, pi, frombuffer, mean, concatenate, where
 from screeninfo import get_monitors, Monitor, common
 
-from plotting.utils import *
+from .utils import *
 
 
 class FitRes(ndarray):

@@ -5,11 +5,12 @@
 # --------------------------------------------------------
 
 from os.path import expanduser, basename, isdir
-from helpers.info_legend import InfoLegend
-from plotting.draw import *
-import helpers.html as html
 from pathlib import Path
 from ROOT import TFile
+
+from . import html
+from .draw import *
+from .utils import BaseDir
 
 
 class SaveDraw(Draw):
@@ -22,24 +23,46 @@ class SaveDraw(Draw):
     Dummy = TFile('dummy.root', 'RECREATE')
 
     def __init__(self, analysis=None, results_dir=None, sub_dir=''):
-        super(SaveDraw, self).__init__(analysis.MainConfig.FileName)
+        self.Analysis = analysis
+        super(SaveDraw, self).__init__(None if analysis is None else analysis.MainConfig.FileName)
 
         # INFO
         SaveDraw.Save = Draw.Config.get_value('SAVE', 'save', default=False)
-        self.Legends = InfoLegend(analysis)
+        self.Legends = self.init_legends()  # TODO make standard legend
 
         # Results
-        self.ResultsDir = join(BaseDir, 'Results', choose(results_dir, default=analysis.TCString))
+        self.ResultsDir = join(BaseDir, 'Results', choose(results_dir, default='' if analysis is None else analysis.TCString))
         self.SubDir = str(sub_dir)
 
         # Server
         SaveDraw.ServerMountDir = expanduser(Draw.Config.get_value('SAVE', 'server mount directory', default=None))
-        SaveDraw.server_is_mounted()
-        self.ServerDir = SaveDraw.load_server_save_dir(analysis)
+        SaveDraw.server_is_mounted(analysis)
+        self.ServerDir = self.load_server_save_dir()
 
     def __del__(self):
         if isfile('dummy.root'):
             remove_file('dummy.root', prnt=False)
+
+    # ----------------------------------------
+    # region INIT
+    def init_legends(self,):
+        try:
+            from helpers.info_legend import InfoLegend
+            return InfoLegend(self.Analysis)
+        except (ImportError, AttributeError):
+            return
+
+    def load_server_save_dir(self):
+        if self.Analysis is not None and SaveDraw.MountExists and SaveDraw.ServerMountDir is not None:
+            if hasattr(self.Analysis, 'load_selections'):
+                ensure_dir(join(SaveDraw.ServerMountDir, 'content', 'selections', str(self.Analysis)))
+                return join(SaveDraw.ServerMountDir, 'content', 'selections', str(self.Analysis))
+            if not hasattr(self.Analysis, 'DUT'):
+                return
+            run_string = f'RP-{self.Analysis.Ensemble.Name.lstrip("0").replace(".", "-")}' if hasattr(self.Analysis, 'RunPlan') else str(self.Analysis.Run.Number)
+            return join(SaveDraw.ServerMountDir, 'content', 'diamonds', self.Analysis.DUT.Name, self.Analysis.TCString, run_string)
+    # endregion INIT
+    # ----------------------------------------
 
     # ----------------------------------------
     # region SET
@@ -74,23 +97,14 @@ class SaveDraw(Draw):
     # ----------------------------------------
 
     @staticmethod
-    def server_is_mounted():
+    def server_is_mounted(ana):
+        if ana is None:
+            return False
         if SaveDraw.MountExists is not None:
             return SaveDraw.MountExists
         SaveDraw.MountExists = isdir(join(SaveDraw.ServerMountDir, 'data'))
         if not SaveDraw.MountExists:
             warning('Diamond server is not mounted in {}'.format(SaveDraw.ServerMountDir))
-
-    @staticmethod
-    def load_server_save_dir(ana):
-        if SaveDraw.MountExists and SaveDraw.ServerMountDir is not None:
-            if hasattr(ana, 'load_selections'):
-                ensure_dir(join(SaveDraw.ServerMountDir, 'content', 'selections', str(ana)))
-                return join(SaveDraw.ServerMountDir, 'content', 'selections', str(ana))
-            if not hasattr(ana, 'DUT'):
-                return
-            run_string = f'RP-{ana.Ensemble.Name.lstrip("0").replace(".", "-")}' if hasattr(ana, 'RunPlan') else str(ana.Run.Number)
-            return join(SaveDraw.ServerMountDir, 'content', 'diamonds', ana.DUT.Name, ana.TCString, run_string)
 
     # ----------------------------------------
     # region SAVE
@@ -164,5 +178,4 @@ class SaveDraw(Draw):
 
 
 if __name__ == '__main__':
-    # todo: should work without ana instance
     z = SaveDraw()

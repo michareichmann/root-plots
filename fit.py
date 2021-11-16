@@ -1,9 +1,10 @@
 #!/usr/bin/env python
-from ROOT import TF1, Math, TMath
-from scipy.special import erf
-from numpy import exp
-from plotting.draw import *
 from functools import partial
+from ROOT import TF1, Math, TMath
+from numpy import exp
+from scipy.special import erf
+
+from .draw import *
 
 
 class Fit(object):
