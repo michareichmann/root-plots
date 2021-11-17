@@ -28,7 +28,6 @@ class SaveDraw(Draw):
 
         # INFO
         SaveDraw.Save = Draw.Config.get_value('SAVE', 'save', default=False)
-        self.Legends = self.init_legends()  # TODO make standard legend
 
         # Results
         self.ResultsDir = join(BaseDir, 'Results', choose(results_dir, default='' if analysis is None else analysis.TCString))
@@ -45,13 +44,6 @@ class SaveDraw(Draw):
 
     # ----------------------------------------
     # region INIT
-    def init_legends(self,):
-        try:
-            from helpers.info_legend import InfoLegend
-            return InfoLegend(self.Analysis)
-        except (ImportError, AttributeError):
-            return
-
     def load_server_save_dir(self):
         if self.Analysis is not None and SaveDraw.MountExists and SaveDraw.ServerMountDir is not None:
             if hasattr(self.Analysis, 'load_selections'):
@@ -112,11 +104,9 @@ class SaveDraw(Draw):
         self(h, **prep_kw(kwargs, show=False, save=False))
         self.save_plots(None, full_path=join(self.Dir, filename), show=False, cname=cname, **kwargs)
 
-    def histo(self, histo, file_name=None, show=True, all_pads=False, prnt=True, save=True, info_leg=True, *args, **kwargs):
+    def histo(self, histo, file_name=None, show=True, prnt=True, save=True, *args, **kwargs):
         c = super(SaveDraw, self).histo(histo, show, *args, **kwargs)
         histo.SetTitle('') if not Draw.Title else do_nothing()
-        if info_leg:
-            self.Legends.draw(c, all_pads, show and Draw.Legend)
         self.save_plots(file_name, prnt=prnt, show=show, save=save)
         return c
 

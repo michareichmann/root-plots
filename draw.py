@@ -14,6 +14,7 @@ from numpy import sign, linspace, ones, ceil, append, tile, absolute, rot90, fli
 from screeninfo import get_monitors, Monitor, common
 
 from .utils import *
+from .info import Info
 
 
 class FitRes(ndarray):
@@ -99,7 +100,7 @@ class Draw(object):
 
     Show = True
     Title = True
-    Legend = False
+    Info = None
     FillColor = 871
     Font = 42
 
@@ -115,7 +116,6 @@ class Draw(object):
 
             # Settings
             Draw.Title = Draw.Config.get_value('SAVE', 'activate title', default=True)
-            Draw.Legend = Draw.Config.get_value('SAVE', 'info legend', default=False)
             Draw.FillColor = Draw.Config.get_value('PLOTS', 'fill color', default=821)
             Draw.Font = Draw.Config.get_value('PLOTS', 'legend font', default=42)
             Draw.Show = Draw.Config.get_value('SAVE', 'show', default=True)
@@ -124,6 +124,7 @@ class Draw(object):
 
             Draw.setup()
 
+        Draw.Info = Draw.init_info()
         self.IColor = 0  # color index
         self.Dic = {'TH1F': self.distribution, 'TH1I': self.distribution, 'TH1D': self.distribution,
                     'TH1': self.function,
@@ -139,7 +140,7 @@ class Draw(object):
         return Draw.histo(th, *args, **kwargs)
 
     def __repr__(self):
-        return f'ROOT {self.__class__.__name__} instance: Title = {get_stat(Draw.Title)}, Show = {get_stat(Draw.Show)}, Legend = {get_stat(Draw.Legend)}'
+        return f'ROOT {self.__class__.__name__} instance: Title = {get_stat(Draw.Title)}, Show = {get_stat(Draw.Show)}, Info = {get_stat(Draw.Info)}'
 
     # ----------------------------------------
     # region INIT
@@ -157,6 +158,10 @@ class Draw(object):
         """ returns: default plot height in pixels."""
         h = Draw.Config.get_value('DRAW', 'plot height ndc', float, default=.7)
         return int(Draw.Monitor.height * h)
+
+    @staticmethod
+    def init_info():
+        return Info(Draw)
     # endregion INIT
     # ----------------------------------------
 
@@ -191,7 +196,7 @@ class Draw(object):
     def set_pad_margins(c=None, l_=None, r=None, b=None, t=None, fix=False):
         Draw.set_margin(c, 'Left', l_, default=.13)
         Draw.set_margin(c, 'Right', r, default=.02)
-        Draw.set_margin(c, 'Bottom', b, default=.116, off=.06 if Draw.Legend and not fix else 0)
+        Draw.set_margin(c, 'Bottom', b, default=.116, off=.06 if Draw.Info.ShowLegend and not fix else 0)
         Draw.set_margin(c, 'Top', t, default=.02, off=.08 if Draw.Title and not fix else 0)
 
     @staticmethod
@@ -464,7 +469,7 @@ class Draw(object):
 
     @staticmethod
     def histo(th, show=True, lm=None, rm=None, bm=None, tm=None, m=None, draw_opt=None, w=1, h=1, logx=None, logy=None, logz=None, grid=None, gridy=None, gridx=None, phi=None, theta=None,
-              leg=None, canvas=None, sumw2=None, stats=False, **kwargs):
+              leg=None, canvas=None, sumw2=None, stats=False, all_pads=False, info_leg=True, **kwargs):
         w += .16 if not Draw.Title and w == 1 else 0  # rectify if there is no title
         th.Sumw2(sumw2) if hasattr(th, 'Sumw2') and sumw2 is not None else do_nothing()
         Draw.set_show(show)
@@ -478,6 +483,8 @@ class Draw(object):
             update_canvas()
             for i_leg in make_list(leg):
                 i_leg.Draw('same')
+        if info_leg:
+            Draw.Info.draw(c, all_pads)
         Draw.set_show(True)
         if stats or stats is None:
             for i in (th.GetListOfGraphs() if 'Multi' in th.ClassName() else [th]):
@@ -717,7 +724,7 @@ class Draw(object):
         y1 = choose(y1, y2 - h)
         if not use_margins:
             y1 += .07 if not Draw.Title and y1 + h > .8 and not fix else 0
-            y1 -= .07 if not Draw.Legend and y1 < .3 and not fix else 0
+            y1 -= .07 if not Draw.Info.ShowLegend and y1 < .3 and not fix else 0
         leg = TLegend(x1, max(y1, 0), x1 + w, min(y1 + h, 1))
         leg.SetName(Draw.get_name('l'))
         do(leg.SetTextSize, ts)
