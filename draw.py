@@ -123,8 +123,9 @@ class Draw(object):
             Draw.Res = Draw.load_resolution()
 
             Draw.setup()
+            Draw.Info = Info(self)
 
-        Draw.Info = Draw.init_info()
+        self.Info = self.init_info()
         self.IColor = 0  # color index
         self.Dic = {'TH1F': self.distribution, 'TH1I': self.distribution, 'TH1D': self.distribution,
                     'TH1': self.function,
@@ -140,7 +141,7 @@ class Draw(object):
         return Draw.histo(th, *args, **kwargs)
 
     def __repr__(self):
-        return f'ROOT {self.__class__.__name__} instance: Title = {get_stat(Draw.Title)}, Show = {get_stat(Draw.Show)}, Info = {get_stat(Draw.Info)}'
+        return f'ROOT {self.__class__.__name__} instance: Title = {get_stat(Draw.Title)}, Show = {get_stat(Draw.Show)}, Info = {get_stat(self.Info)}'
 
     # ----------------------------------------
     # region INIT
@@ -159,8 +160,7 @@ class Draw(object):
         h = Draw.Config.get_value('DRAW', 'plot height ndc', float, default=.7)
         return int(Draw.Monitor.height * h)
 
-    @staticmethod
-    def init_info():
+    def init_info(self):
         return Info(Draw)
     # endregion INIT
     # ----------------------------------------
@@ -460,11 +460,12 @@ class Draw(object):
         return Draw.tpavetext('Irradiation: {}'.format(irr), x1, x2, 1 - height - c.GetTopMargin(), 1 - c.GetTopMargin(), font=42, align=12, margin=0.04)
 
     @staticmethod
-    def legend(histos, titles, styles=None, x2=None, y2=None, *args, **kwargs):
+    def legend(histos, titles, styles=None, x2=None, y2=None, show=True, *args, **kwargs):
         leg = Draw.make_legend(x2, y2, *args, **prep_kw(kwargs, nentries=len(histos)))
         for i in range(len(histos)):
             leg.AddEntry(histos[i], titles[i], 'lpf' if styles is None else styles[i] if type(styles) is list else styles)
-        leg.Draw('same')
+        if show:
+            leg.Draw('same')
         return leg
 
     @staticmethod

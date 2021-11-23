@@ -11,11 +11,12 @@ from .utils import warning
 
 class Info(object):
 
+    ShowLegend = False
+
     def __init__(self, draw):
         self.Draw = draw
         self.ShowDate = draw.Config.get_value('SAVE', 'date', default=False)
         self.ShowGit = draw.Config.get_value('SAVE', 'git hash', default=False) and not self.ShowDate
-        self.ShowLegend = False
 
         self.Objects = []
 
@@ -24,7 +25,7 @@ class Info(object):
 
     def __repr__(self):
         on = ['OFF', 'ON']
-        return f'Drawing info: legend {on[self.ShowLegend]}, git hash {on[self.ShowGit]}, date {on[self.ShowDate]}'
+        return f'Plotting {self.__class__.__name__}: legend {on[self.ShowLegend]}, git hash {on[self.ShowGit]}, date {on[self.ShowDate]}'
 
     def is_active(self):  # noqa
         return True

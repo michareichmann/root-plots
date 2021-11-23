@@ -53,6 +53,9 @@ class SaveDraw(Draw):
                 return
             run_string = f'RP-{self.Analysis.Ensemble.Name.lstrip("0").replace(".", "-")}' if hasattr(self.Analysis, 'RunPlan') else str(self.Analysis.Run.Number)
             return join(SaveDraw.ServerMountDir, 'content', 'diamonds', self.Analysis.DUT.Name, self.Analysis.TCString, run_string)
+
+    def init_info(self):
+        return super().init_info() if self.Analysis is None else self.Analysis.InfoLegend(self)
     # endregion INIT
     # ----------------------------------------
 
@@ -104,8 +107,10 @@ class SaveDraw(Draw):
         self(h, **prep_kw(kwargs, show=False, save=False))
         self.save_plots(None, full_path=join(self.Dir, filename), show=False, cname=cname, **kwargs)
 
-    def histo(self, histo, file_name=None, show=True, prnt=True, save=True, *args, **kwargs):
-        c = super(SaveDraw, self).histo(histo, show, *args, **kwargs)
+    def histo(self, histo, file_name=None, show=True, prnt=True, save=True, info_leg=True, all_pads=False, *args, **kwargs):
+        c = super(SaveDraw, self).histo(histo, show, info_leg=False, *args, **kwargs)
+        if info_leg:
+            self.Info.draw(c, all_pads)
         histo.SetTitle('') if not Draw.Title else do_nothing()
         self.save_plots(file_name, prnt=prnt, show=show, save=save)
         return c
