@@ -434,12 +434,12 @@ class Draw(object):
             Draw.line(min(x_vals), max(x_vals), y, y, width=width, color=color)
 
     @staticmethod
-    def ellipse(a=1, b=1, x_off=0, y_off=0, color=2, w=2):
+    def ellipse(a=1, b=1, x_off=0, y_off=0, color=2, w=2, show=True):
         e = TEllipse(x_off, y_off, a, b)
         do(e.SetLineColor, color)
         do(e.SetLineWidth, w)
         e.SetFillStyle(4000)
-        e.Draw()
+        e.Draw() if show else do_nothing()
         return Draw.add(e)
 
     @staticmethod
