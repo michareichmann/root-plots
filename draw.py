@@ -484,13 +484,14 @@ class Draw(object):
             update_canvas()
             for i_leg in make_list(leg):
                 i_leg.Draw('same')
+                th.GetListOfFunctions().Add(i_leg)
         if info_leg:
             Draw.Info.draw(c, all_pads)
         Draw.set_show(True)
         if stats or stats is None:
             for i in (th.GetListOfGraphs() if 'Multi' in th.ClassName() else [th]):
                 format_statbox(i, **Draw.Stats if stats else Draw.DefaultStats, c=canvas)
-        return Draw.add(c, th, leg)[0]
+        return Draw.add(c, th)[0]
 
     @staticmethod
     def mode(m=1, **kwargs):
