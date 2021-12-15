@@ -576,11 +576,10 @@ class Draw(object):
         self.histo(th, **prep_kw(kwargs, draw_opt='colz', show=False))
         return th
 
-    def efficiency(self, x, e, binning=None, title='Efficiency', lm=None, show=True, **kwargs):
+    def efficiency(self, x, e, binning=None, **kwargs):
         p = self.profile(x, e, binning, show=False)
-        x = get_hist_args(p)
-        y = array([calc_eff(p0 * n, n) for p0, n in [[p.GetBinContent(ibin), p.GetBinEntries(ibin)] for ibin in range(1, p.GetNbinsX() + 1)]])
-        return self.graph(x, y, title, lm=lm, show=show, y_tit='Efficiency [%]', **kwargs)
+        x, y = get_hist_args(p), array([calc_eff(p0 * n, n) if n else [-1, 0, 0] for p0, n in [[p.GetBinContent(ibin), p.GetBinEntries(ibin)] for ibin in range(1, p.GetNbinsX() + 1)]])
+        return self.graph(x[y[:, 0] != -1], y[y[:, 0] != -1], **prep_kw(kwargs, title='Efficiency', y_tit='Efficiency [%]'))
 
     def pull(self, h, binning=None, ret_h=False, **kwargs):
         x = get_graph_y(h, err=False) if is_graph(h) else get_hist_vec(h, err=False)
