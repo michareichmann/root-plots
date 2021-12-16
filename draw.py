@@ -484,7 +484,7 @@ class Draw(object):
             update_canvas()
             for i_leg in make_list(leg):
                 i_leg.Draw('same')
-                th.GetListOfFunctions().Add(i_leg)
+                th.GetListOfFunctions().Add(i_leg) if hasattr(th, 'GetListOfFunctions') else do_nothing()
         if info_leg:
             Draw.Info.draw(c, all_pads)
         Draw.set_show(True)
