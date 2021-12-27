@@ -10,7 +10,7 @@ from os import _exit, makedirs, remove
 from os.path import dirname, realpath, exists, isfile
 from time import time
 
-from numpy import array, zeros, count_nonzero, sqrt, average, full, all, quantile, arctan2, cos, sin
+from numpy import array, zeros, count_nonzero, sqrt, average, full, all, quantile, arctan2, cos, sin, corrcoef
 from uncertainties import ufloat_fromstr, ufloat
 from uncertainties.core import Variable, AffineScalarFunc
 
@@ -180,6 +180,14 @@ def remove_file(file_path, prnt=True):
     if isfile(file_path):
         warning('removing {}'.format(file_path), prnt=prnt)
         remove(file_path)
+
+
+def correlate(l1, l2):
+    if len(l1.shape) == 2:
+        x, y = l1.flatten(), l2.flatten()
+        cut, s = (x > 0) & (y > 0), count_nonzero(x)
+        return correlate(x[cut], y[cut]) if count_nonzero(cut) > .6 * s else 0
+    return corrcoef(l1, l2)[0][1]
 
 
 def add_spaces(s):

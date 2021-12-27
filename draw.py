@@ -10,7 +10,7 @@ from typing import Any
 
 from ROOT import TGraphErrors, TGaxis, TLatex, TGraphAsymmErrors, TCanvas, gStyle, TLegend, TArrow, TPad, TCutG, TLine, TPaveText, TPaveStats, TH1F, TEllipse, TColor, TProfile
 from ROOT import TProfile2D, TH2F, TH3F, THStack, TMultiGraph, TPie, gROOT, TF1
-from numpy import sign, linspace, ones, ceil, append, tile, absolute, rot90, flip, argsort, ndarray, arange, diff, pi, frombuffer, mean, concatenate, where
+from numpy import sign, linspace, ones, ceil, append, tile, absolute, rot90, flip, argsort, ndarray, arange, diff, pi, frombuffer, mean, concatenate, where, roll
 from screeninfo import get_monitors, Monitor, common
 
 from .utils import *
@@ -646,6 +646,14 @@ class Draw(object):
             x, y = get_2d_bins(h, arr=True)
             dx, dy = diff(x)[0] / 2, diff(y)[0] / 2
             [Draw.tlatex(x[m] + dx, y[n] + dy, str((x.size - 1) * n + m)) for n in range(y.size - 1) for m in range(x.size - 1)]
+
+    def maps_correlation(self, m1, m2, sx=0, sy=0, thresh=.1, **dkw):
+        x, y = get_correlation_arrays(m1, m2, sx, sy, thresh, flat=True)
+        return self.histo_2d(x[(x != 0) & (y != 0)], y[(x != 0) & (y != 0)], **prep_kw(dkw, x_tit=m1.GetZaxis().GetTitle(), y_tit=m2.GetZaxis().GetTitle()))
+
+    def maps_profile(self, m1, m2, sx=0, sy=0, thresh=.1, **dkw):
+        x, y = get_correlation_arrays(m1, m2, sx, sy, thresh, flat=True)
+        return self.profile(x[(x != 0) & (y != 0)], y[(x != 0) & (y != 0)], **prep_kw(dkw, graph=True, x_tit=m1.GetZaxis().GetTitle(), y_tit=m2.GetZaxis().GetTitle()))
     # endregion DRAW
     # ----------------------------------------
 
@@ -1330,6 +1338,25 @@ def hide_axis(axis):
     axis.SetTickLength(0)
     axis.SetLabelOffset(99)
     axis.SetTitleOffset(99)
+
+
+def get_correlation_arrays(m1, m2, sx=0, sy=0, thresh=.1, flat=False):
+    a1, a2 = [get_2d_hist_vec(sm, err=False, flat=False) for sm in [m1, m2]]
+    n1, n2 = [get_2d_bin_entries(sm) for sm in [m1, m2]]
+    a1[n1 < thresh * n1.max()] = 0  # set bins with low stats to 0
+    a2[n2 < thresh * n2.max()] = 0
+    a2 = roll(a2, [sx, sy], axis=[0, 1])  # shift through second array
+    return (a1.flatten(), a2.flatten()) if flat else (a1, a2)
+
+
+def correlate_maps(m1, m2, sx=0, sy=0, thresh=.1):
+    a1, a2 = (m1, m2) if type(m1) is ndarray else get_correlation_arrays(m1, m2, thresh=thresh)
+    return correlate(a1, roll(a2, [sx, sy], axis=[0, 1]))
+
+
+def correlate_all_maps(m1, m2, thresh=.1):
+    a1, a2 = get_correlation_arrays(m1, m2, thresh=thresh)
+    return array([[correlate_maps(a1, a2, x, y) for x in range(a1.shape[0])] for y in range(a1.shape[1])])
 
 
 def set_root_warnings(status):
