@@ -51,6 +51,13 @@ class FitRes(ndarray):
         self.Pars, self.Errors, self.Names, self.vChi2, self.vNdf = state[-5:]
         super(FitRes, self).__setstate__(state[0:-5])
 
+    def __call__(self, x):
+        return self.Fit(x) if self.is_tf1 else warning('not implemented')
+
+    @property
+    def is_tf1(self):
+        return 'TF1' in self.Fit.ClassName()
+
     def get_pars(self, err=True):
         return array([ufloat(p, e) for p, e in zip(self.Pars, self.Errors)]) if err else self.Pars
 
