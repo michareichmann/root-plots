@@ -118,7 +118,6 @@ class Landau(Fit):
 
 class Erf(Fit):
     def __init__(self, h=None, fit_range=None, npx=100):
-        self.XOff = -.22278
         Fit.__init__(self, 'Error Function', h, fit_range, npx)
 
     def init_fit(self):
@@ -129,6 +128,7 @@ class Erf(Fit):
 
     def set_start_values(self):
         x, y = get_graph_vecs(self.Histo, err=False)
+        x, y = x[(x >= self.XMin) & (x <= self.XMax)], y[(x >= self.XMin) & (x <= self.XMax)]
         self.Fit.SetParameters(mean(y), sign(y[-1] - y[0]) * (max(y) - min(y)) / 2, mean(x), (x[-1] - x[0]) / 5)
 
 
