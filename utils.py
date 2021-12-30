@@ -28,6 +28,8 @@ RED = '\033[91m'
 UP1 = '\033[1A'
 ERASE = '\033[K'
 
+COUNT = 0
+
 
 def get_t_str():
     return datetime.now().strftime('%H:%M:%S')
@@ -192,6 +194,13 @@ def correlate(l1, l2):
 
 def add_spaces(s):
     return ''.join(f' {s[i]}' if i and (s[i].isupper() or s[i].isdigit()) and not s[i - 1].isdigit() and not s[i - 1].isupper() else s[i] for i in range(len(s)))
+
+
+def print_check(reset=False):
+    global COUNT
+    COUNT = 0 if reset else COUNT
+    print('======={}========'.format(COUNT))
+    COUNT += 1
 
 
 class Config(ConfigParser):
