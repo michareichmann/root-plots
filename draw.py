@@ -1206,12 +1206,12 @@ def normalise_bins(h):
     update_canvas()
 
 
-def make_bins(min_val, max_val=None, bin_width=1, last=None, n=None, off=0):
+def make_bins(min_val, max_val=None, w=1, last=None, n=None, off=0):
     bins = array(min_val, 'd')
     if type(min_val) not in [ndarray, list]:
         min_val, max_val = choose(min_val, 0, decider=max_val), choose(max_val, min_val)
         last = [] if last is None else max_val if last == 1 else last
-        bins = append(arange(min_val, max_val, bin_width, dtype='d'), last) if n is None else linspace(min_val, max_val, int(n) + 1, endpoint=True)
+        bins = append(arange(min_val, max_val, w, dtype='d'), last) if n is None else linspace(min_val, max_val, int(n) + 1, endpoint=True)
     return [bins.size - 1, bins + off]
 
 
