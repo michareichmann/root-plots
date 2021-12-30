@@ -441,17 +441,18 @@ class Draw(object):
             Draw.line(min(x_vals), max(x_vals), y, y, width=width, color=color)
 
     @staticmethod
-    def ellipse(a=1, b=1, x_off=0, y_off=0, color=2, w=2, show=True):
+    def ellipse(a=1, b=1, x_off=0, y_off=0, color=2, w=2, fill=False, fill_color=None, show=True):
         e = TEllipse(x_off, y_off, a, b)
         do(e.SetLineColor, color)
+        do(e.SetFillColor, choose(fill_color, color))
         do(e.SetLineWidth, w)
-        e.SetFillStyle(4000)
+        e.SetFillStyle(1001 if fill else 0)
         e.Draw() if show else do_nothing()
         return Draw.add(e)
 
     @staticmethod
-    def circle(r, x_off=0, y_off=0, color=None, w=None):
-        return Draw.ellipse(r, r, x_off, y_off, color, w)
+    def circle(r, x_off=0, y_off=0, color=None, w=None, fill=False, fill_color=None, show=True):
+        return Draw.ellipse(r, r, x_off, y_off, color, w, fill, fill_color, show)
 
     @staticmethod
     def preliminary(canvas=None, height=.06):
@@ -753,8 +754,7 @@ class Draw(object):
             leg.SetFillColor(0)
             leg.SetFillStyle(0)
             leg.SetTextAlign(12)
-        Draw.add(leg)
-        return leg
+        return Draw.add(leg)
     # endregion CREATE
     # ----------------------------------------
 
@@ -1366,8 +1366,8 @@ def correlate_all_maps(m1, m2, thresh=.1):
     return array([[correlate_maps(a1, a2, x, y) for x in range(a1.shape[0])] for y in range(a1.shape[1])])
 
 
-def set_root_warnings(status):
-    gROOT.ProcessLine('gErrorIgnoreLevel = {e};'.format(e='0' if status else 'kError'))
+def set_root_warnings(status, fatal=False):
+    gROOT.ProcessLine('gErrorIgnoreLevel = {e};'.format(e='0' if status else 'kFatal' if fatal else 'kError'))
 
 
 def set_root_output(status=True):
