@@ -956,6 +956,10 @@ def find_bins(values, lfac=.2, rfac=.2, q=.02, n=1, lq=None, w=None, x0=None):
     return [bins.size - 1, bins]
 
 
+def find_2d_bins(x, y, lfac=.2, rfac=.2, q=.02, n=1, lq=None, w=None, x0=None):
+    return sum([find_bins(i, lfac, rfac, q, n, lq, w, x0) for i in [x, y]], start=[])
+
+
 def find_range(values, lfac=.2, rfac=.2, q=.02, lq=None):
     return ax_range(*quantile(values, [choose(lq, q), 1 - q]), lfac, rfac)
 
