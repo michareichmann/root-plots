@@ -73,13 +73,19 @@ class SaveDraw(Draw):
             f.Write()
             SaveDraw.File = f
 
+    @staticmethod
+    def close_file():
+        if SaveDraw.File is not None:
+            SaveDraw.File.Close()
+            SaveDraw.File = None
+
     def remove_plots(self, *exclude):
         self.open_file(*exclude, prnt=False)
 
     def create_overview(self, x=4, y=3, redo=True):
         if self.ServerDir is not None:
             p = Path(self.ServerDir, 'plots.root')
-            html.create_tree(p.with_name('index.html'))
+            html.create_tree(p.with_name('tree.html'))
             if not p.with_suffix('.html').exists() or redo:
                 html.create_root_overview(p, x, y)
 

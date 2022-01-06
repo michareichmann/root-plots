@@ -97,7 +97,7 @@ def create_root_overview(p: Path, x=3, y=2):
     head.add_line(script('https://root.cern/js/latest/scripts/JSRoot.core.js', 'type="text/javascript"'))
     f.set_header(head.get_text())
     body = File()
-    body.add_line(heading(link(p.with_name('index.html'), 'Directory Tree', new_tab=True), 3, style_(('top', '-15px'), ('position', 'relative'))))
+    body.add_line(heading(link(p.with_name('tree.html'), 'Directory Tree', new_tab=True), 3, style_(('top', '-15px'), ('position', 'relative'))))
     body.add_line(div('', *make_opt('id', 'simpleGUI'), style_(('top', '30px'), ('bottom', 0), ('left', 0), ('right', 0), ('position', 'absolute'))))
     inner = File()
     inner.add_line("JSROOT.require('hierarchy').then(() => {")
