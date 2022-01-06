@@ -9,7 +9,7 @@ from subprocess import Popen
 from typing import Any
 from pytz import timezone, utc
 
-from .utils import BaseDir, warning, info, add_spaces, is_iter, datetime
+from .utils import BaseDir, warning, info, add_spaces, is_iter, datetime, choose
 
 
 def tag(name, txt, *opts_):
@@ -88,7 +88,7 @@ def create_tree(p: Path):
     Popen(f'tree {p.parent} -H . --charset utf-8 -P "*.html" -o {p}', shell=True)
 
 
-def create_root_overview(p: Path, x=3, y=2):
+def create_root_overview(p: Path, x=3, y=2, verbose=None):
     f = File(str(p.with_suffix('.html')))
     head = File()
     head.add_line('<meta charset="UTF-8">')
@@ -112,7 +112,7 @@ def create_root_overview(p: Path, x=3, y=2):
     inner.add_line('});', ind=1)
     body.add_line(File.add_tag(inner.get_text(), 'script', 'type="text/javascript"'))
     f.set_body(body.get_text())
-    f.save()
+    f.save(verbose=verbose)
 
 
 def style(center=False, right=False, left=False, colour=None, vcenter=False, fontsize=None, smaller=False, transform=None, nowrap=None):
@@ -265,14 +265,14 @@ class File:
         t = File.add_tag(t, 'html', 'lang="en"')
         return f'<!doctype html>\n{t}'
 
-    def save(self, add_root=True):
+    def save(self, add_root=True, verbose=None):
         t = self.get_text() if not self.Header else f'{self.Header}\n{self.Body}'
         if add_root:
             t = self.add_root(t)
         with open(self.FileName, 'w+') as f:
             f.write(t)
             f.truncate()
-        self.info(f'wrote file {self.FileName}')
+        self.info(f'wrote file {self.FileName}', prnt=choose(verbose, self.Verbose))
 
     def get_text(self):
         return self.T
@@ -296,8 +296,8 @@ class File:
 ROOTHTML = make_root_html()
 
 
-def create_root(file_path: Path, title='', draw_opt='colz', pal=55):
+def create_root(file_path: Path, title='', draw_opt='colz', pal=55, verbose=None):
     f = File(str(file_path))
     f.set_body(ROOTHTML.Body.format(pal=pal, plot_file='plots.root', plot_name=file_path.stem, draw_opt=draw_opt))
     f.set_header(ROOTHTML.Header.format(title=f'{add_spaces(file_path.stem).title()} {title}'))
-    f.save()
+    f.save(verbose=verbose)

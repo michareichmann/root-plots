@@ -87,7 +87,7 @@ class SaveDraw(Draw):
             p = Path(self.ServerDir, 'plots.root')
             html.create_tree(p.with_name('tree.html'))
             if not p.with_suffix('.html').exists() or redo:
-                html.create_root_overview(p, x, y)
+                html.create_root_overview(p, x, y, verbose=self.Verbose)
 
     def set_sub_dir(self, name):
         self.SubDir = name
@@ -162,7 +162,7 @@ class SaveDraw(Draw):
             if file_name in SaveDraw.File.GetListOfKeys():
                 SaveDraw.File.Delete(f'{file_name};1')
             else:
-                html.create_root(p, title=p.parent.name, pal=53 if 'SignalMap' in file_name else 55)
+                html.create_root(p, title=p.parent.name, pal=53 if 'SignalMap' in file_name else 55, verbose=self.Verbose)
             SaveDraw.File.cd()
             canvas.Write(file_name)
             SaveDraw.File.Write()
