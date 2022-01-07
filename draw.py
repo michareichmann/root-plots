@@ -140,7 +140,8 @@ class Draw(object):
                     'TProfile': self.profile,
                     'TH2I': self.histo_2d, 'TH2D': self.histo_2d, 'TH2F': self.histo_2d,
                     'TProfile2D': self.prof2d,
-                    'TMultiGraph': self.multigraph}
+                    'TMultiGraph': self.multigraph,
+                    'TF1': self.function}
 
     def __call__(self, th, *args, **kwargs):
         if th.ClassName() in self.Dic:
