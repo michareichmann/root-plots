@@ -472,7 +472,7 @@ class Draw(object):
     def legend(histos, titles, styles=None, x2=None, y2=None, show=True, *args, **kwargs):
         leg = Draw.make_legend(x2, y2, *args, **prep_kw(kwargs, nentries=len(histos)))
         for i in range(len(histos)):
-            leg.AddEntry(histos[i], titles[i], 'lpf' if styles is None else styles[i] if type(styles) is list else styles)
+            leg.AddEntry(histos[i], titles[i], 'lpf' if styles is None else styles[i] if is_iter(styles) and not type(styles) is str else styles)
         if show:
             leg.Draw('same')
         return leg
@@ -520,10 +520,10 @@ class Draw(object):
         self.histo(th, **prep_kw(kwargs, stats=None))
         return th
 
-    def function(self, f, title='', c=None, bm=None, lm=None, rm=None, show=True, logy=None, w=1, h=1, stats=None, draw_opt=None, grid=None, **kwargs):
-        format_histo(f, title=title, **prep_kw(kwargs, **Draw.mode()))
-        c = get_last_canvas() if draw_opt and 'same' in draw_opt and c is None else c
-        self.histo(f, show=show, bm=bm, lm=lm, rm=rm, logy=logy, w=w, h=h, stats=stats, draw_opt=draw_opt, canvas=c, grid=grid)
+    def function(self, f, title='', c=None, **dkw):
+        format_histo(f, title=title, **prep_kw(dkw, **Draw.mode()))
+        c = get_last_canvas() if 'draw_opt' in dkw and 'same' in dkw['draw_opt'] and c is None else c
+        self.histo(f, **prep_kw(dkw, canvas=c))
         return f
 
     def graph(self, x, y=None, title='', bm=None, show=True, bin_labels=None, **kwargs):
