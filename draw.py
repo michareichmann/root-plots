@@ -838,7 +838,7 @@ def get_window_ratio(c=None):
 def get_stat_margins(c=None, x2=None, y2=None, d=.01, bottom=False, left=False, h=0., w=0.):
     c = choose(c, get_last_canvas(warn=False))
     r = get_window_ratio(c)
-    x2 = choose(x2, c.GetLeftMargin() + w + d * r if left else 1 - c.GetRightMargin() - d * r)
+    x2 = choose(x2, c.GetLeftMargin() + w + 4 * d * r if left else 1 - c.GetRightMargin() - d * r)
     y2 = choose(y2, c.GetBottomMargin() + h + d if bottom else 1 - c.GetTopMargin() - d)
     return x2, y2
 
