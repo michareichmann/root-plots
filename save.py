@@ -171,9 +171,10 @@ class SaveDraw(Draw):
             self.create_overview(redo=False)
 
     @staticmethod
-    def save_last(canvas=None, ext='pdf'):
-        filename = input(f'Enter the name of the {ext}-file: ')
-        choose(canvas, get_last_canvas()).SaveAs(join(BaseDir, f'{filename.split(".")[0]}.{ext}'))
+    def save_last(canvas=None, ext='pdf', verbose=None):
+        filename = f'{input(f"Enter the name of the {ext}-file: ").split(".")[0]}.{ext}'
+        choose(canvas, get_last_canvas()).SaveAs(join(BaseDir, filename))
+        info(f'saved to: {join(BaseDir, filename)}', prnt=choose(verbose, Draw.Verbose))
     # endregion SAVE
     # ----------------------------------------
 
