@@ -298,12 +298,12 @@ class Draw(object):
         return Draw.axis(xmin, xmax, y, y, tit, limits, name, col, w, off, tit_size, lab_size, tick_size, line, opt, l_off, log, center)
 
     @staticmethod
-    def line(x1, x2, y1, y2, color=1, width=1, style=1):
+    def line(x1, x2, y1, y2, color=1, width=1, style=1, show=True):
         line = TCutG(Draw.get_name('l'), 2, array([x1, x2], 'd'), array([y1, y2], 'd'))
         line.SetLineColor(color)
         line.SetLineWidth(width)
         line.SetLineStyle(style)
-        line.Draw('same')
+        line.Draw('same') if show else do_nothing()
         return Draw.add(line)
 
     @staticmethod
@@ -317,12 +317,12 @@ class Draw(object):
         return Draw.add(line)
 
     @staticmethod
-    def vertical_line(x, ymin=-1e9, ymax=1e9, color=1, w=1, style=1, tline=False):
-        return Draw.line(x, x, ymin, ymax, color, w, style) if not tline else Draw.tline(x, x, ymin, ymax, color, w, style)
+    def vertical_line(x, ymin=-1e9, ymax=1e9, color=1, w=1, style=1, tline=False, show=True):
+        return Draw.line(x, x, ymin, ymax, color, w, style, show) if not tline else Draw.tline(x, x, ymin, ymax, color, w, style)
 
     @staticmethod
-    def horizontal_line(y, xmin=-1e9, xmax=1e9, color=1, w=1, style=1, tline=False, ndc=None):
-        return Draw.line(xmin, xmax, y, y, color, w, style) if not tline else Draw.tline(xmin, xmax, y, y, color, w, style, ndc)
+    def horizontal_line(y, xmin=-1e9, xmax=1e9, color=1, w=1, style=1, tline=False, ndc=None, show=True):
+        return Draw.line(xmin, xmax, y, y, color, w, style, show) if not tline else Draw.tline(xmin, xmax, y, y, color, w, style, ndc)
 
     @staticmethod
     def polygon(x, y, line_color=1, width=1, style=1, name=None, fillstyle=None, fill_color=None, opacity=None, show=True):
