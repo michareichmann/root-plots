@@ -20,7 +20,7 @@ class SaveDraw(Draw):
     ServerMountDir = None
     MountExists = None
     File = None
-    Dummy = TFile('dummy.root', 'RECREATE')
+    Dummy = TFile(join(Draw.Dir, 'dummy.root'), 'RECREATE')
 
     def __init__(self, analysis=None, results_dir=None, sub_dir=''):
         self.Analysis = analysis
@@ -39,8 +39,7 @@ class SaveDraw(Draw):
         self.ServerDir = self.load_server_save_dir()
 
     def __del__(self):
-        if isfile('dummy.root'):
-            remove_file('dummy.root', prnt=False)
+        remove_file(join(self.Dir, 'dummy.root'), prnt=False)
 
     # ----------------------------------------
     # region INIT
