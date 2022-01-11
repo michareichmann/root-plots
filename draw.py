@@ -473,8 +473,7 @@ class Draw(object):
         leg = Draw.make_legend(x2, y2, *args, **prep_kw(kwargs, nentries=len(histos)))
         for i in range(len(histos)):
             leg.AddEntry(histos[i], titles[i], 'lpf' if styles is None else styles[i] if is_iter(styles) and not type(styles) is str else styles)
-        if show:
-            leg.Draw('same')
+        leg.Draw('same') if show else do_nothing()
         return leg
 
     @staticmethod
@@ -612,18 +611,18 @@ class Draw(object):
 
     def multigraph(self, graphs, title='', leg_titles=None, bin_labels=None, draw_opt='p', wleg=.2, **kwargs):
         if hasattr(graphs, 'GetName'):
-            m, g = graphs, graphs.GetListOfGraphs()[0]
+            m, g0 = graphs, graphs.GetListOfGraphs()[0]
         else:
-            g = graphs[0]
-            m = TMultiGraph(Draw.get_name('mg'), ';'.join([title, g.GetXaxis().GetTitle(), g.GetYaxis().GetTitle()]))
+            g0 = graphs[0]
+            m = TMultiGraph(Draw.get_name('mg'), ';'.join([title, g0.GetXaxis().GetTitle(), g0.GetYaxis().GetTitle()]))
             for i, g in enumerate(graphs):
                 m.Add(g, draw_opt)
                 format_histo(g, **prep_kw(kwargs, color=self.get_color(len(graphs)), stats=False))
         y_range = ax_range(get_graph_y(graphs, err=False), 0, .3, .6)
-        format_histo(m, draw_first=True, **prep_kw(kwargs, **Draw.mode(1, y_off=g.GetYaxis().GetTitleOffset()), y_range=y_range, x_tit=choose('', None, bin_labels)))
+        format_histo(m, draw_first=True, **prep_kw(kwargs, **Draw.mode(1, y_off=g0.GetYaxis().GetTitleOffset()), y_range=y_range, x_tit=choose('', None, bin_labels)))
         set_bin_labels(m, bin_labels)
         leg = self.legend(graphs, leg_titles, 'p', w=wleg) if leg_titles else None
-        self.histo(m, leg=leg, **prep_kw(kwargs, bm=choose(.26, None, bin_labels), draw_opt='ap'))
+        self.histo(m, **prep_kw(kwargs, leg=leg, bm=choose(.26, None, bin_labels), draw_opt='ap'))
         return m
 
     def pie(self, labels, values=None, colors=None, title='', offset=0, show=True, flat=False, draw_opt=None, **kwargs):
