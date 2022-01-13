@@ -131,15 +131,16 @@ class Erf(Fit):
         Fit.__init__(self, 'Error Function', h, fit_range, npx)
 
     def init_fit(self):
-        return self.Draw.make_f(Draw.get_name('erf'), '[0] + [1] * TMath::Erf((x - [2]) / [3])', self.XMin, self.XMax)
+        return self.Draw.make_f(Draw.get_name('erf'), '[0] + [1] * TMath::Erf((x - [2]) / [3])', self.XMin, self.XMax, pars=[0, 1, 0, 1])
 
     def get_par_names(self):
         return ['mean', 'spread', 'inflexion', 'width']
 
     def set_start_values(self):
-        x, y = get_graph_vecs(self.Histo, err=False)
-        x, y = x[(x >= self.XMin) & (x <= self.XMax)], y[(x >= self.XMin) & (x <= self.XMax)]
-        self.Fit.SetParameters(mean(y), sign(y[-1] - y[0]) * (max(y) - min(y)) / 2, mean(x), (x[-1] - x[0]) / 5)
+        if self.Histo is not None:
+            x, y = get_graph_vecs(self.Histo, err=False)
+            x, y = x[(x >= self.XMin) & (x <= self.XMax)], y[(x >= self.XMin) & (x <= self.XMax)]
+            self.set_parameters(mean(y), sign(y[-1] - y[0]) * (max(y) - min(y)) / 2, mean(x), (x[-1] - x[0]) / 5)
 
 
 class Crystalball(Fit):
