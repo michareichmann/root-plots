@@ -34,6 +34,9 @@ class Fit(object):
     def __call__(self, *args, **kwargs):
         return self.fit(*args, **kwargs)
 
+    def __repr__(self):
+        return f'{self.__class__.__name__} Fit: {self.Name} with {self.NPars} parameters'
+
     def clear_old(self):
         old = get_object(self.Name)
         if old:
@@ -41,6 +44,9 @@ class Fit(object):
 
     def init_fit(self):
         return TF1()
+
+    def set_parameters(self, *pars):
+        self.Fit.SetParameters(*pars)
 
     def get_par_names(self):
         return []
@@ -83,7 +89,11 @@ class Fit(object):
         return FitRes(self.Fit)
 
     def draw(self, *args, **kwargs):
-        pass
+        self.Draw.function(self.Fit, self.Name, *args, **prep_kw(kwargs, x_tit='x', y_tit='y'))
+
+    @property
+    def formula(self):
+        return self.Fit.GetFormula().GetTitle()
 
 
 class PoissonI(Fit):
