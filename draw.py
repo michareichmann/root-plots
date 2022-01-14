@@ -951,7 +951,7 @@ def set_2d_ranges(h, dx, dy):
 
 
 def find_bins(values, lfac=.2, rfac=.2, q=.02, n=1, lq=None, w=None, x0=None):
-    width, (xmin, xmax) = choose(w, freedman_diaconis(values) * n), find_range(values, lfac, rfac, q, lq)
+    width, (xmin, xmax) = choose(w, bin_width(values) * n), find_range(values, lfac, rfac, q, lq)
     bins = arange(choose(x0, xmin), xmax + width, width)
     return [bins.size - 1, bins]
 

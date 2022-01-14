@@ -155,6 +155,11 @@ def freedman_diaconis(x):
     return 2 * (quantile(x, .75) - quantile(x, .25)) / x.size ** (1 / 3)
 
 
+def bin_width(x):
+    w = freedman_diaconis(x)
+    return w if w else 3.49 * mean_sigma(x)[1].n / x.size ** (1 / 3)
+
+
 def cart2pol(x, y):
     return array([sqrt(x ** 2 + y ** 2), arctan2(y, x)])
 
