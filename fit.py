@@ -78,12 +78,14 @@ class Fit(object):
             Draw.vertical_line(t0, -100, 1e5)
         return t1 - t0
 
-    def fit(self, n=1, show=True, minuit=True):
+    def fit(self, n=1, draw=True, minuit=True):
         if minuit:
             Math.MinimizerOptions.SetDefaultMinimizer('Minuit2', 'Migrad')
         for _ in range(n):
-            self.Histo.Fit(self.Fit, f'qs{"" if show else 0}', '', self.XMin, self.XMax)
-        if show:
+            set_root_output(0)
+            self.Histo.Fit(self.Fit, f'qs', '', self.XMin, self.XMax)
+        set_root_output(True)
+        if draw:
             self.Fit.Draw('same')
             update_canvas()
         return FitRes(self.Fit)
@@ -121,8 +123,8 @@ class Landau(Fit):
     def init_fit(self):
         return self.Draw.make_f(Draw.get_name('lan'), 'landau', self.XMin, self.XMax)
 
-    def get_mpv(self, show=False):
-        f = self.fit(show=show, minuit=False)
+    def get_mpv(self, draw=False):
+        f = self.fit(draw=draw, minuit=False)
         return f[1] + self.XOff * f[2]
 
 
