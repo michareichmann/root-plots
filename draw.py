@@ -703,13 +703,13 @@ class Draw(object):
         return Draw.add(f)
 
     @staticmethod
-    def make_tf1(name, f, xmin=0, xmax=1, color=None, w=None, style=None, title='', npx=None, *args, **kwargs):
+    def make_tf1(name, f, xmin=0, xmax=1, pars0: Any = 0, color=None, w=None, style=None, title='', npx=None, *args, **kwargs):
         def tmp(x, pars):
-            _ = pars
             return f(x[0], pars, *args, **kwargs) if 'pars' in signature(f).parameters else f(x[0], *args, **kwargs)
 
         Draw.add(tmp)
-        f0 = TF1(choose(name, Draw.get_name('f')), tmp, xmin, xmax)
+        f0 = TF1(choose(name, Draw.get_name('f')), tmp, xmin, xmax, len(pars0) if is_iter(pars0) else pars0)
+        f0.SetParameters(*pars0) if pars0 else do_nothing()
         do(f0.SetNpx, npx)
         format_histo(f0, title, line_color=color, line_style=style, lw=w)
         return Draw.add(f0)
@@ -1281,12 +1281,12 @@ def get_fw_center(h):
 
 
 def find_mpv(h, r=.8):
-    x, y = [f(get_hist_vec(h, err=False)) for f in [argsort, sorted]]
-    x, ymax = (x[-1] + 1, y[-1]) if y[-1] < 2 * y[-2] else (x[-2] + 1, y[-2])
+    bins, y = [f(get_hist_vec(h, err=False)) for f in [argsort, sorted]]
+    bmax, ymax = (bins[-1] + 1, y[-1]) if y[-1] < 2 * y[-2] else (bins[-2] + 1, y[-2])
     fit_range = [f(ymax * r) for f in [h.FindFirstBinAbove, h.FindLastBinAbove]]
-    fit_range = fit_range if diff(fit_range)[0] > 5 else (x + array([-5, 5])).tolist()
+    fit_range = fit_range if diff(fit_range)[0] > 5 else (bmax + array([-5, 5])).tolist()
     yfit, xfit = FitRes(h.Fit('gaus', 'qs0', '', *[h.GetBinCenter(i) for i in fit_range]))[:2]  # fit the top with a gaussian to get better maxvalue
-    return (xfit, yfit) if abs(yfit - ymax) < .1 * ymax else (x, ymax)  # check if fit value is reasonable ...
+    return (xfit, yfit) if abs(yfit - ymax) < .2 * ymax else (h.GetBinCenter(int(bmax)) + ufloat(0, h.GetBinWidth(1) / 2), ymax * ufloat(1, .02))  # check if fit value is reasonable ...
 
 
 def get_fwhm(h, fit_range=.8, ret_edges=False, err=True):

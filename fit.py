@@ -217,7 +217,7 @@ class Langau(Fit):
         self.XMin, self.XMax = [k * self.Histo.GetMean() for k in [.1, 3]] if fit_range is None else fit_range
 
     def init_fit(self):
-        return Draw.make_tf1(self.Name, langau, 0, self.get_x_max() * 3, self.NPars, nconv=self.NConvolutions, nsigma=self.NSigma)
+        return Draw.make_tf1(self.Name, langau, 0, self.get_x_max() * 3, [1] * self.NPars, nconv=self.NConvolutions, nsigma=self.NSigma)
 
     def get_par_names(self):
         return ['Width', 'MPV', 'Area', 'GSigma']
