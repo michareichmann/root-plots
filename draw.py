@@ -1280,13 +1280,17 @@ def get_fw_center(h):
     return mean(get_fwhm(h, ret_edges=True))  # center of FWHM as MPV
 
 
-def get_fwhm(h, fit_range=.8, ret_edges=False, err=True):
+def find_mpv(h, r=.8):
     x, y = [f(get_hist_vec(h, err=False)) for f in [argsort, sorted]]
     x, ymax = (x[-1] + 1, y[-1]) if y[-1] < 2 * y[-2] else (x[-2] + 1, y[-2])
-    fit_range = [f(ymax * fit_range) for f in [h.FindFirstBinAbove, h.FindLastBinAbove]]
+    fit_range = [f(ymax * r) for f in [h.FindFirstBinAbove, h.FindLastBinAbove]]
     fit_range = fit_range if diff(fit_range)[0] > 5 else (x + array([-5, 5])).tolist()
-    half_max = FitRes(h.Fit('gaus', 'qs0', '', *[h.GetBinCenter(i) for i in fit_range]))[0] * .5  # fit the top with a gaussian to get better maxvalue
-    half_max = ufloat(1, .05) * ymax / 2 if half_max > .9 * ymax else ufloat(1, .02) * half_max  # half max must be lower than max ...
+    yfit, xfit = FitRes(h.Fit('gaus', 'qs0', '', *[h.GetBinCenter(i) for i in fit_range]))[:2]  # fit the top with a gaussian to get better maxvalue
+    return (xfit, yfit) if abs(yfit - ymax) < .1 * ymax else (x, ymax)  # check if fit value is reasonable ...
+
+
+def get_fwhm(h, fit_range=.8, ret_edges=False, err=True):
+    half_max = find_mpv(h, fit_range)[1] * .5
     low, high = [ufloat(v.n, v.s + abs(v.n - i.n)) for v, i in zip(_get_fwhm(h, half_max), _get_fwhm(h, half_max - half_max.s))]
     return ((low, high) if err else (low.n, high.n)) if ret_edges else high - low
 
