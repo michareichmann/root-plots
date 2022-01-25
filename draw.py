@@ -1280,12 +1280,12 @@ def get_fw_center(h):
     return mean(get_fwhm(h, ret_edges=True))  # center of FWHM as MPV
 
 
-def find_mpv(h, r=.8):
+def find_mpv(h, r=.8, show_fit=False):
     bins, y = [f(get_hist_vec(h, err=False)) for f in [argsort, sorted]]
     bmax, ymax = (bins[-1] + 1, y[-1]) if y[-1] < 2 * y[-2] else (bins[-2] + 1, y[-2])
     fit_range = [f(ymax * r) for f in [h.FindFirstBinAbove, h.FindLastBinAbove]]
     fit_range = fit_range if diff(fit_range)[0] > 5 else (bmax + array([-5, 5])).tolist()
-    yfit, xfit = FitRes(h.Fit('gaus', 'qs0', '', *[h.GetBinCenter(i) for i in fit_range]))[:2]  # fit the top with a gaussian to get better maxvalue
+    yfit, xfit = FitRes(h.Fit('gaus', f'qs{"" if show_fit else"0"}', '', *[h.GetBinCenter(i) for i in fit_range]))[:2]  # fit the top with a gaussian to get better maxvalue
     return (xfit, yfit) if abs(yfit - ymax) < .2 * ymax else (h.GetBinCenter(int(bmax)) + ufloat(0, h.GetBinWidth(1) / 2), ymax * ufloat(1, .02))  # check if fit value is reasonable ...
 
 
