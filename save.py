@@ -48,6 +48,9 @@ class SaveDraw(Draw):
             if hasattr(self.Analysis, 'load_selections'):
                 ensure_dir(join(SaveDraw.ServerMountDir, 'content', 'selections', str(self.Analysis)))
                 return join(SaveDraw.ServerMountDir, 'content', 'selections', str(self.Analysis))
+            elif hasattr(self.Analysis, 'Ensemble') and 'RS' in str(self.Analysis.Ensemble):
+                ensure_dir(join(SaveDraw.ServerMountDir, 'content', self.SubDir))
+                return join(SaveDraw.ServerMountDir, 'content', self.SubDir)
             if not hasattr(self.Analysis, 'DUT'):
                 return
             run_string = f'RP-{self.Analysis.Ensemble.Name.lstrip("0").replace(".", "-")}' if hasattr(self.Analysis, 'RunPlan') else str(self.Analysis.Run.Number)
