@@ -159,7 +159,7 @@ class Draw(object):
             monitors = sorted(get_monitors(), key=lambda mon: mon.x)
             imon = Draw.Config.get_value('DRAW', 'monitor number', int, default=0)
             return monitors[imon if imon < len(monitors) else 0]
-        except common.ScreenInfoError:
+        except (common.ScreenInfoError, IndexError):
             return Monitor(0, 0, 1366, 768)
 
     @staticmethod
