@@ -733,7 +733,8 @@ class Draw(object):
         return Draw.make_tgrapherrors(x[y != 0], y[y != 0], title=p.GetTitle(), x_tit=p.GetXaxis().GetTitle(), y_tit=p.GetYaxis().GetTitle())
 
     @staticmethod
-    def make_legend(x2=None, y2=None, w=.25, nentries=2, scale=1, ts=None, d=.01, y1=None, x1=None, clean=False, margin=.25, cols=None, fix=False, bottom=False, left=False, c=None):
+    def make_legend(x2=None, y2=None, w=.25, nentries=2, scale=1, ts=None, d=.01, y1=None, x1=None, clean=False, margin=.25, cols=None, fix=False, bottom=False, left=False, c=None, **kwargs):
+        _ = kwargs
         use_margins = y2 is None
         h = nentries * .05 * scale
         x2, y2 = get_stat_margins(c, x2, y2, d, bottom, left, h, w)
@@ -838,7 +839,7 @@ def get_stat_margins(c=None, x2=None, y2=None, d=.01, bottom=False, left=False, 
     c = choose(c, get_last_canvas(warn=False))
     r = get_window_ratio(c)
     x2 = choose(x2, c.GetLeftMargin() + w + 4 * d * r if left else 1 - c.GetRightMargin() - d * r)
-    y2 = choose(y2, c.GetBottomMargin() + h + d if bottom else 1 - c.GetTopMargin() - d)
+    y2 = choose(y2, c.GetBottomMargin() + h + 4 * d if bottom else 1 - c.GetTopMargin() - d)
     return x2, y2
 
 
