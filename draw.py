@@ -721,7 +721,8 @@ class Draw(object):
         x, y = array(x), array(y)
         asym = len(x.shape) == 2 or len(y.shape) == 2
         s, utypes, has_ers = len(x), [type(v[0]) in [Variable, AffineScalarFunc] for v in [x, y]], [len(v.shape) > 1 for v in [x, y]]
-        ex, ey = [array([[v.s for v in vals]] if is_u and not asym else vals[:, 1:3].T if has_e else zeros((2, s)) if asym else [zeros(s)], 'd') for vals, is_u, has_e in zip([x, y], utypes, has_ers)]
+        ex, ey = [array([[v.s for v in vals]] if is_u else vals[:, 1:3].T if has_e else [zeros(s)], 'd') for vals, is_u, has_e in zip([x, y], utypes, has_ers)]
+        ex, ey = [array([[[v.s] * 2 for v in vals]] if is_u else vals[:, 1:3] if has_e else zeros((s, 2)), 'd').T for vals, is_u, has_e in zip([x, y], utypes, has_ers)] if asym else (ex, ey)
         x, y = [array([v.n for v in vals] if utype else vals[:, 0] if has_e else vals, 'd') for vals, utype, has_e in zip([x, y], utypes, has_ers)]
         g = (TGraphAsymmErrors if asym else TGraphErrors)(s, x, y, *array(ex.tolist()), *array(ey.tolist()))  # doesn't work without double conversion...
         format_histo(g, Draw.get_name('g'), **prep_kw(kwargs, marker=20, markersize=1))
