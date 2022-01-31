@@ -5,7 +5,6 @@
 # --------------------------------------------------------
 
 from os.path import expanduser, basename, isdir
-from pathlib import Path
 from ROOT import TFile
 
 from . import html
@@ -24,7 +23,7 @@ class SaveDraw(Draw):
 
     def __init__(self, analysis=None, results_dir=None, sub_dir=''):
         self.Analysis = analysis
-        super(SaveDraw, self).__init__(None if analysis is None else analysis.MainConfig.FileName)
+        super(SaveDraw, self).__init__(None if analysis is None else analysis.MainConfig.FilePath)
 
         # INFO
         SaveDraw.Save = Draw.Config.get_value('SAVE', 'save', default=False)
