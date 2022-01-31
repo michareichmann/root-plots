@@ -7,8 +7,9 @@ from copy import deepcopy
 from datetime import datetime
 from json import loads
 from os import _exit, makedirs, remove
-from os.path import dirname, realpath, exists, isfile
+from os.path import dirname, realpath, exists, isfile, join
 from time import time
+from pathlib import Path
 
 from numpy import array, zeros, count_nonzero, sqrt, average, full, all, quantile, arctan2, cos, sin, corrcoef
 from uncertainties import ufloat_fromstr, ufloat
@@ -212,8 +213,11 @@ class Config(ConfigParser):
 
     def __init__(self, file_name, **kwargs):
         super(Config, self).__init__(**kwargs)
-        self.FileName = file_name
+        self.FilePath = Path(file_name)
         self.read(file_name) if type(file_name) is not list else self.read_file(file_name)
+
+    def __repr__(self):
+        return f'{self.__class__.__name__}: {join(*self.FilePath.parts[-2:])}'
 
     def get_value(self, section, option, dtype: type = str, default=None):
         dtype = type(default) if default is not None else dtype
@@ -242,5 +246,5 @@ class Config(ConfigParser):
             print()
 
     def write(self, file_name=None, space_around_delimiters=True):
-        with open(choose(file_name, self.FileName), 'w') as f:
+        with open(choose(file_name, self.FilePath), 'w') as f:
             super(Config, self).write(f, space_around_delimiters)
