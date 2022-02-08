@@ -43,4 +43,4 @@ def table(header, rows, endl=False):
     max_width = [len(max(col, key=len).replace(' \\\\\\hline', '')) for col in cols]  # noqa
     rows = array([[f'{word:<{w}}' for word in col] for col, w in zip(cols, max_width)]).T
     rows = '\n'.join(table_row(*row, endl=endl) for row in rows)
-    return f'{table_row(*header, endl=True)}\n{rows}'
+    return f'{table_row(*header, endl=True)}\n{rows}' if header else rows
