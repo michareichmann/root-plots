@@ -67,6 +67,9 @@ class Fit(object):
         return ufloat(self.Fit.GetParameter(i), self.Fit.GetParError(i))
 
     def get_parameters(self):
+        return [self.Fit.GetParameter(i) for i in range(self.NPars)]
+
+    def print_parameters(self):
         for i in range(self.NPars):
             print('{}: {:2.1f}'.format(self.Fit.GetParName(i), self.Fit.GetParameter(i)))
 
@@ -119,6 +122,7 @@ class Landau(Fit):
     def __init__(self, h=None, fit_range=None, npx=100):
         self.XOff = -.22278
         Fit.__init__(self, 'Landau', h, fit_range, npx)
+        self.NPars = self.Fit.GetNpar()
 
     def init_fit(self):
         return self.Draw.make_f(Draw.get_name('lan'), 'landau', self.XMin, self.XMax)
