@@ -395,9 +395,7 @@ class Draw(object):
     def stats(fit, x2=None, y2=None, w=.3, prec='1.1f', names=None, rm_entries=None):
         names = fit.Names if names is None else names
         c = get_last_canvas()
-        tm = .98 - .05 - c.GetTopMargin() if y2 is None else y2
-        rm = .98 - c.GetRightMargin()
-        p = TPaveStats(rm - width, tm - .06 * (fit.NPar + 1), rm, tm, 'ndc')
+        p = TPaveStats(*get_stat_pos(c, fit.NPar - make_list(rm_entries).size + 1, x2, y2, w=w), 'ndc')
         p.SetBorderSize(1)
         p.SetFillColor(0)
         p.SetFillStyle(0)
@@ -823,8 +821,8 @@ def format_histo(histo, name=None, title=None, x_tit=None, y_tit=None, z_tit=Non
     return h
 
 
-def set_statbox(x2=None, y2=None, h=None, w=.3, entries=False, m=False, rms=False, all_stat=False, fit=False, center_x=False, center_y=False, form=None, stats=True):
-    Draw.Stats = {'x2': x2, 'y2': y2, 'h': h, 'w': w, 'entries': entries, 'm': m, 'rms': rms, 'all_stat': all_stat, 'fit': fit, 'center_x': center_x, 'center_y': center_y, 'form': form}
+def set_statbox(x2=None, y2=None, h=None, w=.3, entries=False, m=False, rms=False, all_stat=False, fit=False, center_x=False, center_y=False, form=None, stats=True, **kw):
+    Draw.Stats = {'x2': x2, 'y2': y2, 'h': h, 'w': w, 'entries': entries, 'm': m, 'rms': rms, 'all_stat': all_stat, 'fit': fit, 'center_x': center_x, 'center_y': center_y, 'form': form, **kw}
     return stats
 
 
@@ -846,7 +844,17 @@ def get_stat_margins(c=None, x2=None, y2=None, d=.01, bottom=False, left=False, 
     return x2, y2
 
 
-def format_statbox(th, x2=None, y2=None, d=.01, h=None, w=.3, entries=False, m=False, rms=False, all_stat=False, fit=False, center_x=False,
+def get_stat_pos(c, nentries, x2=None, y2=None, d=.01, h=None, w=.3, center_x=False, center_y=False, bottom=False, left=False):
+    r = get_window_ratio(c)
+    h = choose(h, .05 / r * nentries)
+    x2, y2 = get_stat_margins(c, x2, y2, d, bottom, left, h, w)
+    cx, cy = mean([1 - c.GetRightMargin(), c.GetLeftMargin()]), mean([1 - c.GetTopMargin(), c.GetBottomMargin()])
+    x1, x2 = (cx - w / 2, cx + w / 2) if center_x else (x2 - w, x2)
+    y1, y2 = (cy - h / 2, cy + h / 2) if center_y else (y2 - h, y2)
+    return x1, y1, x2, y2
+
+
+def format_statbox(th, x2=None, y2=None, d=.01, h=None, w=.3, entries=False, m=False, rms=False, all_stat=False, fit=False, fit_opt=None, stat_opt=None, center_x=False,
                    center_y=False, bottom=False, left=False, form=None, c=None):
     c = choose(c, get_last_canvas(warn=False))
     update_canvas(c)
@@ -855,18 +863,11 @@ def format_statbox(th, x2=None, y2=None, d=.01, h=None, w=.3, entries=False, m=F
         gStyle.SetOptFit(True)
     p = None if 'TF1' in th.ClassName() else next((o for o in th.GetListOfFunctions() if 'Pave' in o.ClassName()), None)
     if p is not None:
-        r = get_window_ratio(c)
         stats = ones(3, 'i') if all_stat else array([rms, m, entries], 'i')
-        fit_pars = f.GetNpar() + 1 if fit and f is not None else 0
-        h = choose(h, .05 / r * (stats.nonzero()[0].size + fit_pars))
-        x2, y2 = get_stat_margins(c, x2, y2, d, bottom, left, h, w)
-        cx, cy = mean([1 - c.GetRightMargin(), c.GetLeftMargin()]), mean([1 - c.GetTopMargin(), c.GetBottomMargin()])
-        p.SetX1NDC(cx - w / 2 if center_x else x2 - w)
-        p.SetX2NDC(cx + w / 2 if center_x else x2)
-        p.SetY1NDC(cy - h / 2 if center_y else y2 - h)
-        p.SetY2NDC(cy + h / 2 if center_y else y2)
-        p.SetOptStat(int('100000{}{}{}0'.format(*stats * 2)))
-        p.SetOptFit(int(fit))
+        nentries = stats.nonzero()[0].size + (f.GetNpar() + 1 if fit and f is not None else 0)
+        [getattr(p, f'Set{n}NDC')(i) for i, n in zip(get_stat_pos(c, nentries, x2, y2, d, h, w, center_x, center_y, bottom, left), ['X1', 'Y1', 'X2', 'Y2'])]
+        p.SetOptStat(choose(stat_opt, int('100000{}{}{}0'.format(*stats * 2))))
+        p.SetOptFit(choose(fit_opt, int(fit)))
         p.SetStatFormat(choose(form, '1.1f'))
         p.SetFitFormat(form) if form is not None else do_nothing()
         p.Draw()
