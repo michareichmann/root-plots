@@ -110,6 +110,24 @@ class PoissonI(Fit):
         return self.Draw.make_f(self.Name, '[0] * TMath::PoissonI(x, [1])', 0, 30, self.Pars)
 
 
+class Expo(Fit):
+    def __init__(self, h=None, xmin=None, xmax=None, npx=100):
+        Fit.__init__(self, 'Exponential', h, None if xmin is None else [xmin, xmax], npx)
+
+    def init_fit(self):
+        self.XMin, self.XMax = get_graph_x(self.Histo, err=False)[[0, -1]] if self.XMin == 0 else (self.XMin, self.XMax)
+        return self.Draw.make_f(Draw.get_name('expo'), '[0] + [1] * TMath::Exp(-(x - [2]) / [3])', self.XMin, self.XMax)
+
+    def set_start_values(self):
+        if self.Histo is not None:
+            x, y = get_graph_vecs(self.Histo, err=False)
+            d, s, t = max(y) - min(y), sign(y[0] - y[-1]), x[-1] - x[0]
+            self.set_parameters(y[-1] - s * d / 2, y[0], x[0], t / 2)
+
+    def get_par_names(self):
+        return ['asymptote', 'starting value', 'starting time', 'time constant']
+
+
 class Gauss(Fit):
     def __init__(self, h=None, fit_range=None, npx=100):
         Fit.__init__(self, 'Gauss', h, fit_range, npx)
