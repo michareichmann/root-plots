@@ -86,7 +86,7 @@ class Fit(object):
             Math.MinimizerOptions.SetDefaultMinimizer('Minuit2', 'Migrad')
         for _ in range(n):
             set_root_output(0)
-            self.Histo.Fit(self.Fit, f'qs', '', self.XMin, self.XMax)
+            self.Histo.Fit(self.Fit, f'qs{"" if draw else 0}', '', self.XMin, self.XMax)
         set_root_output(True)
         if draw:
             self.Fit.Draw('same')
@@ -122,7 +122,7 @@ class Expo(Fit):
         if self.Histo is not None:
             x, y = get_graph_vecs(self.Histo, err=False)
             d, s, t = max(y) - min(y), sign(y[0] - y[-1]), x[-1] - x[0]
-            self.set_parameters(y[-1] - s * d / 2, y[0], x[0], t / 2)
+            self.set_parameters(y[-1] - s * d / 2, s * y[0], x[0], t / 2)
 
     def get_par_names(self):
         return ['asymptote', 'starting value', 'starting time', 'time constant']
