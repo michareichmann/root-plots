@@ -392,7 +392,7 @@ class Draw(object):
         return Draw.add(p)
 
     @staticmethod
-    def stats(fit, y2=None, width=.3, prec='5.1f', names=None):
+    def stats(fit, x2=None, y2=None, w=.3, prec='1.1f', names=None, rm_entries=None):
         names = fit.Names if names is None else names
         c = get_last_canvas()
         tm = .98 - .05 - c.GetTopMargin() if y2 is None else y2
@@ -406,7 +406,8 @@ class Draw(object):
         ls = p.GetListOfLines()
         ls.Add(Draw.tlatex(0, 0, '#chi^{{2}} / ndf  = {chi2:{p}} / {ndf}'.format(ndf=fit.Ndf(), chi2=fit.Chi2(), p=prec), size=0, align=0, font=42))
         for i in range(fit.NPar):
-            ls.Add(Draw.tlatex(0, 0, '{n}  = {v:{p}} #pm {e:{p}}'.format(n=names[i], v=fit.Parameter(i), e=fit.ParError(i), p=prec), size=0, align=0, font=42))
+            if i not in make_list(rm_entries):
+                ls.Add(Draw.tlatex(0, 0, '{n}  = {v:{p}} #pm {e:{p}}'.format(n=names[i], v=fit.Parameter(i), e=fit.ParError(i), p=prec), size=0, align=0, font=42))
         p.Draw()
         return Draw.add(p)
 
