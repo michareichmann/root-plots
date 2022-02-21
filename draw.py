@@ -593,19 +593,19 @@ class Draw(object):
         th = self.distribution(x, choose(binning, find_bins, values=x[x != 0], lfac=.5, rfac=.5, n=2), x_tit=h.GetYaxis().GetTitle(), **kwargs)
         return th if ret_h else mean_sigma(x[x != 0])
 
-    def stack(self, histos, title, leg_titles, scale=False, draw_opt='nostack', show=True, fill=None, w=.2, *args, **kwargs):
+    def stack(self, histos, title, leg_titles, scale=False, fill=None, w=.2, **dkw):
         s = THStack(Draw.get_name('s'), title)
         leg = Draw.make_legend(nentries=len(histos), w=w)
         for h, tit in zip(histos, leg_titles):
             s.Add(h, 'hist')
             leg.AddEntry(h, tit, choose('lf', 'l', fill))
             color = self.get_color(len(histos))
-            format_histo(h, color=color, fill_color=choose(color, 0, fill), fill_style=choose(1001, 4000, fill), stats=0, *args, **kwargs)
+            format_histo(h, color=color, fill_color=choose(color, 0, fill), fill_style=choose(1001, 4000, fill), stats=0, **dkw)
             if scale:
                 h.Scale(1 / h.GetMaximum())
         h0 = histos[0]
         format_histo(s, draw_first=True, x_tit=h0.GetXaxis().GetTitle(), y_tit=h0.GetYaxis().GetTitle(), y_off=h0.GetYaxis().GetTitleOffset())
-        self.histo(s, draw_opt=draw_opt, leg=leg, lm=get_last_canvas().GetLeftMargin(), show=show)
+        self.histo(s, **prep_kw(dkw, draw_opt='nostack', leg=leg, lm=get_last_canvas().GetLeftMargin()))
         return s
 
     def multigraph(self, graphs, title='', leg_titles=None, bin_labels=None, draw_opt='p', wleg=.2, **kwargs):
