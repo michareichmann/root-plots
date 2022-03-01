@@ -504,7 +504,8 @@ class Draw(object):
         d = {1: {'tit_size': .05, 'lab_size': .045, 'y_off': 1.35},
              2: {'w': 1.5, 'h': .75, 'tit_size': .06, 'lab_size': .05, 'y_off': .7, 'lm': .08, 'bm': .15},
              3: {'w': 1.5, 'h': .5, 'tit_size': .07, 'lab_size': .06, 'y_off': .5, 'lm': .073, 'bm': .225, 'rm': .03, 'x_tit': 'Time [ns]', 'y_tit': 'Signal [mV]', 'markersize': .5},
-             4: {'tit_size': .05, 'lab_size': .045, 'tick_size': 0, 'l_off_y': 10, 'l_off_x': 10, 'center_x': True, 'center_y': True, 'y_off': .5, 'x_off': .5, 'lm': .066, 'bm': .066}
+             4: {'tit_size': .05, 'lab_size': .045, 'tick_size': 0, 'l_off_y': 10, 'l_off_x': 10, 'center_x': True, 'center_y': True, 'y_off': .5, 'x_off': .5, 'lm': .066, 'bm': .066},
+             5: {'tit_size': .08, 'lab_size': .07, 'y_off': 1.02, 'lm': .17, 'bm': .15}
              }[m]
         return prep_kw(kwargs, **d)
 
