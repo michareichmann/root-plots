@@ -1361,6 +1361,14 @@ def hide_axis(axis):
     axis.SetTitleOffset(99)
 
 
+def remove_low_stat_bins(h, thresh=.1):
+    e = get_2d_bin_entries(h)
+    e0 = e.flatten()
+    t = mean(e0[e0 > 0]) * thresh
+    e0[e0 < t] = 0
+    set_2d_entries(h, e0.reshape(e.shape))
+
+
 def get_correlation_arrays(m1, m2, sx=0, sy=0, thresh=.1, flat=False):
     a1, a2 = [get_2d_hist_vec(sm, err=False, flat=False) for sm in [m1, m2]]
     n1, n2 = [get_2d_bin_entries(sm) for sm in [m1, m2]]
