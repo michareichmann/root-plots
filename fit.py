@@ -103,11 +103,11 @@ class Fit(object):
 
 class PoissonI(Fit):
     def __init__(self, h=None, fit_range=None, npx=1000, p0=None, p1=None):
-        self.Pars = [choose(p0, h.GetEntries()), choose(p1, 1)]
-        Fit.__init__(self, 'PoissonI', h, fit_range, npx, par_names=['Consant', 'Lambda'])
+        self.Pars = [choose(p0, h.GetEntries() if h else 1), choose(p1, 1)]
+        Fit.__init__(self, 'PoissonI', h, choose(fit_range, [0, 30]), npx, par_names=['Consant', 'Lambda'])
 
     def init_fit(self):
-        return self.Draw.make_f(self.Name, '[0] * TMath::PoissonI(x, [1])', 0, 30, self.Pars)
+        return self.Draw.make_f(self.Name, '[0] * TMath::PoissonI(x, [1])', self.XMin, self.XMax, self.Pars)
 
 
 class Expo(Fit):
