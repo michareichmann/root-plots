@@ -324,15 +324,20 @@ class Draw(object):
         return Draw.line(xmin, xmax, y, y, color, w, style, show) if not tline else Draw.tline(xmin, xmax, y, y, color, w, style, ndc)
 
     @staticmethod
-    def polygon(x, y, line_color=1, width=1, style=1, name=None, fillstyle=None, fill_color=None, opacity=None, show=True):
+    def polygon(x, y, line_color=1, width=1, style=1, name=None, fillstyle=None, fill_color=None, opacity=None, show=True, closed=True):
         if get_object(name) is not None:  # check if name already exists
             get_object(name).Clear()
-        line = TCutG(choose(name, Draw.get_name('poly')), len(x) + 1, append(x, x[0]).astype('d'), append(y, y[0]).astype('d'))
+        s, x, y = (len(x) + 1, append(x, x[0]).astype('d'), append(y, y[0]).astype('d')) if closed else (len(x), array(x, 'd'), array(y, 'd'))
+        line = TCutG(choose(name, Draw.get_name('poly')), s, x, y)
         format_histo(line, line_color=line_color, lw=width, line_style=style, fill_color=fill_color, fill_style=fillstyle, opacity=opacity)
         if show:
             line.Draw('l')
             line.Draw('f') if fill_color is not None or fillstyle is not None and fillstyle < 4000 else do_nothing()
         return Draw.add(line)
+
+    @staticmethod
+    def polyline(x, y, line_color=1, width=1, style=1, name=None, fillstyle=None, fill_color=None, opacity=None, show=True):
+        return Draw.polygon(x, y, line_color, width, style, name, fillstyle, fill_color, opacity, show, closed=False)
 
     @staticmethod
     def box(x1, y1, x2, y2, line_color=1, width=1, style=1, name=None, fillstyle=None, fillcolor=None, opacity=None, show=True):
@@ -998,6 +1003,10 @@ def set_bin_labels(g, labels):
 
 def make_box_args(x1, y1, x2, y2):
     return array([[x1, x1, x2, x2], [y1, y2, y2, y1]])
+
+
+def make_poly_args(x, y, last_x=None):
+    return append(x.repeat(2)[1:], choose(last_x, x[-1] + x[-1] - x[-2])), y.repeat(2)
 
 
 def make_star(cx=0, cy=0, r=1, n=5):
