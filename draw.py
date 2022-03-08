@@ -1292,7 +1292,8 @@ def find_mpv_fwhm(histo, bins=15):
 
 
 def get_fw_center(h):
-    return mean(get_fwhm(h, ret_edges=True))  # center of FWHM as MPV
+    (low, high), bw = get_fwhm(h, ret_edges=True), h.GetBinWidth(1)
+    return mean([add_err(low, bw), add_err(high, bw)])  # center of FWHM as MPV
 
 
 def find_mpv(h, r=.8, show_fit=False):
