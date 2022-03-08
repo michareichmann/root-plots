@@ -106,6 +106,14 @@ def uarr2n(arr):
     return array([i.n for i in arr]) if len(arr) and is_ufloat(arr[0]) else arr
 
 
+def add_err(u, e):
+    return u + ufloat(0, e)
+
+
+def add_perr(u, e):
+    return u * ufloat(1, e)
+
+
 def make_ufloat(n, s=0):
     return array([ufloat(*v) for v in array([n, s]).T]) if is_iter(n) else n if is_ufloat(n) else ufloat(n, s)
 
