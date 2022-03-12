@@ -21,12 +21,20 @@ def unit(txt, custom=False):
     return f('unit', '' if custom else "\\" + txt)
 
 
-def si(*v, fmt='.1f', unt=''):
-    return [f('SI', f'{i:{fmt}}', f'\\{unt}' if unt else unt).replace('/', '') for i in v]
+def si(*v, fmt='.1f', unt=None):
+    return num(*v, fmt=fmt) if unt is None else [f('SI', f'{float(i):{fmt}}', f'\\{unt}').replace('/', '') for i in v]
 
 
-def si_range(v0, v1, fmt='.0f', unt=''):
-    return f('SIrange', f'{float(v0):{fmt}}', f'{float(v1):{fmt}}', f'\\{unt}' if unt else unt)
+def num(*v, fmt='.1f'):
+    return [f('num', f'{float(i):{fmt}}').replace('/', '') for i in v]
+
+
+def si_range(v0, v1, fmt='.0f', unt=None):
+    return num_range(v0, v1, fmt) if unt is None else f('SIrange', f'{float(v0):{fmt}}', f'{float(v1):{fmt}}', f'\\{unt}')
+
+
+def num_range(v0, v1, fmt='.0f'):
+    return f('numrange', f'{float(v0):{fmt}}', f'{float(v1):{fmt}}')
 
 
 def hline(word):
