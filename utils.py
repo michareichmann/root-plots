@@ -217,6 +217,10 @@ def print_check(reset=False):
     COUNT += 1
 
 
+def sum_times(t, fmt='%H:%M:%S'):
+    return sum(array([datetime.strptime(i, fmt) for i in t]) - datetime.strptime('0', '%H'))
+
+
 class Config(ConfigParser):
 
     def __init__(self, file_name, **kwargs):
