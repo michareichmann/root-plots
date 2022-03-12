@@ -101,6 +101,19 @@ class Fit(object):
         return self.Fit.GetFormula().GetTitle()
 
 
+def make_fit(h, f, xmin=0, xmax=1, start_values=None, par_names=None, name=None, npx=1000):
+    class NewFit(Fit):
+        def __init__(self):
+            Fit.__init__(self, choose(name, 'NewFit'), h, [xmin, xmax], npx, par_names=par_names)
+
+        def init_fit(self):
+            n_par = len(signature(f).parameters) - 1
+            tmp = lambda x, pars: (f(x, pars[0]) if n_par == 1 else f(x, pars[0], pars[1]) if n_par == 2 else f(x, pars[0], pars[1], pars[2]))
+            return self.Draw.make_tf1(self.Name, tmp, self.XMin, self.XMax, pars0=start_values)
+
+    return NewFit()
+
+
 class PoissonI(Fit):
     def __init__(self, h=None, fit_range=None, npx=1000, p0=None, p1=None):
         self.Pars = [choose(p0, h.GetEntries() if h else 1), choose(p1, 1)]
