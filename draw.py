@@ -715,7 +715,7 @@ class Draw(object):
 
         Draw.add(tmp)
         f0 = TF1(choose(name, Draw.get_name('f')), tmp, xmin, xmax, len(pars0) if is_iter(pars0) else pars0)
-        f0.SetParameters(*pars0) if pars0 else do_nothing()
+        [f0.SetParameter(i, p) for i, p in enumerate(pars0)] if is_iter(pars0) else do_nothing()
         do(f0.SetNpx, npx)
         format_histo(f0, title, line_color=color, line_style=style, lw=w)
         return Draw.add(f0)
