@@ -17,6 +17,10 @@ def bold(*txt):
     return [f('textbf', i) for i in txt]
 
 
+def math(txt):
+    return f'${txt}$'
+
+
 def unit(txt, custom=False):
     return f('unit', '' if custom else "\\" + txt)
 
