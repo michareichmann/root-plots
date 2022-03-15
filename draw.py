@@ -520,7 +520,7 @@ class Draw(object):
         else:
             th = TH1F(Draw.get_name('h'), title, *choose(binning, find_bins, values=x, q=q, lfac=lf, rfac=rf))
             fill_hist(th, x)
-        format_histo(th, **prep_kw(kwargs, **Draw.mode(), fill_color=Draw.FillColor, y_tit='Number of Entries'))
+        format_histo(th, **prep_kw(kwargs, **Draw.mode(), fill_color=Draw.FillColor, y_tit='Number of Entries' if not th.GetYaxis().GetTitle() else None))
         self.histo(th, **prep_kw(kwargs, stats=None))
         return th
 
@@ -785,7 +785,8 @@ def format_histo(histo, name=None, title=None, x_tit=None, y_tit=None, z_tit=Non
     do(h.SetName, name)
     set_palette(*make_list(pal) if pal is not None else [])
     if normalise is not None:
-        y_tit = 'Frequency' if 'Number' in choose(y_tit, h.GetYaxis().GetTitle()) else choose(y_tit, h.GetYaxis().GetTitle())
+        old_tit = choose(y_tit, h.GetYaxis().GetTitle())
+        y_tit = old_tit.replace('Number', 'Frequency') if 'Number' in old_tit else old_tit
         normalise_histo(h)
     try:
         do(h.SetStats, stats)
