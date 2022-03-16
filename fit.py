@@ -166,11 +166,12 @@ class Landau(Fit):
 
 
 class Erf(Fit):
-    def __init__(self, h=None, fit_range=None, npx=100):
+    def __init__(self, h=None, fit_range=None, pars=None, npx=100):
+        self.Pars = pars
         Fit.__init__(self, 'Error Function', h, fit_range, npx)
 
     def init_fit(self):
-        return self.Draw.make_f(Draw.get_name('erf'), '[0] + [1] * TMath::Erf((x - [2]) / [3])', self.XMin, self.XMax, pars=[0, 1, 0, 1])
+        return self.Draw.make_f(Draw.get_name('erf'), '[0] + [1] * TMath::Erf((x - [2]) / [3])', self.XMin, self.XMax, pars=choose(self.Pars, [0, 1, 0, 1]))
 
     def get_par_names(self):
         return ['mean', 'spread', 'inflexion', 'width']
