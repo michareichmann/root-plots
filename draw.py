@@ -743,7 +743,7 @@ class Draw(object):
     def make_legend(x2=None, y2=None, w=.25, nentries=2, scale=1, ts=None, d=.01, y1=None, x1=None, clean=False, margin=.25, cols=None, fix=False, bottom=False, left=False, c=None, **kwargs):
         _ = kwargs
         use_margins = y2 is None
-        h = nentries * .05 * scale
+        h = nentries // choose(cols, 1) * .05 * scale
         x2, y2 = get_stat_margins(c, x2, y2, d, bottom, left, h, w)
         x1 = choose(x1, x2 - w)
         y1 = choose(y1, y2 - h)
