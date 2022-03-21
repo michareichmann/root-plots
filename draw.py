@@ -537,7 +537,7 @@ class Draw(object):
         self.histo(g, show=show, bm=choose(bm, .24 if bin_labels else None), **kwargs)
         return g
 
-    def profile(self, x, y=None, binning=None, title='', thresh=.02, graph=False, **kwargs):
+    def profile(self, x, y=None, binning=None, title='', thresh=.02, graph=False, **dkw):
         if y is None:
             p = x
         else:
@@ -545,9 +545,8 @@ class Draw(object):
             p = TProfile(Draw.get_name('p'), title, *choose(binning, find_bins, values=x, q=thresh))
             fill_hist(p, x, y)
         p = self.make_graph_from_profile(p) if graph else p
-        set_statbox(entries=True, w=.25)
-        format_histo(p, **prep_kw(kwargs, **Draw.mode(), fill_color=Draw.FillColor))
-        self.histo(p, **prep_kw(kwargs, stats=True))
+        format_histo(p, **prep_kw(dkw, **Draw.mode(), fill_color=Draw.FillColor))
+        self.histo(p, **prep_kw(dkw, stats=choose(get_kw('stats', dkw), set_statbox, entries=True, w=.25)))
         return p
 
     def prof2d(self, x, y=None, zz=None, binning=None, title='', rot=None, mirror=None, centre=None, **dkw):
