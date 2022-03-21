@@ -560,9 +560,9 @@ class Draw(object):
         p = self.rotate_2d(p, rot)
         p = self.flip_2d(p, mirror)
         rx, ry = get_2d_centre_ranges(p, centre)
-        format_histo(p, **prep_kw(dkw, **Draw.mode(), z_off=1.2, pal=55, stats=set_statbox(entries=True, w=.25), x_range=rx, y_range=ry))
+        format_histo(p, **prep_kw(dkw, **Draw.mode(), z_off=1.2, pal=55, x_range=rx, y_range=ry))
         draw_opt = choose(get_kw('draw_opt', dkw), 'colz')
-        self.histo(p, **prep_kw(dkw,  rm=.17 if 'z' in draw_opt else None, draw_opt=draw_opt))
+        self.histo(p, **prep_kw(dkw,  rm=.17 if 'z' in draw_opt else None, stats=choose(get_kw('stats', dkw), set_statbox, entries=True, w=.25), draw_opt=draw_opt))
         return p
 
     def histo_2d(self, x, y=None, binning=None, title='', canvas=None, rot=None, mirror=None, centre=None, **dkw):
@@ -575,9 +575,9 @@ class Draw(object):
         th = self.rotate_2d(th, rot)
         th = self.flip_2d(th, mirror)
         rx, ry = get_2d_centre_ranges(th, centre)
-        format_histo(th, **prep_kw(dkw, **Draw.mode(), z_off=1.2, z_tit='Number of Entries', pal=55, stats=set_statbox(entries=True, w=.25), x_range=rx, y_range=ry))
+        format_histo(th, **prep_kw(dkw, **Draw.mode(), z_off=1.2, z_tit='Number of Entries', pal=55, x_range=rx, y_range=ry))
         draw_opt = choose(get_kw('draw_opt', dkw), 'colz')
-        self.histo(th, stats=True, canvas=canvas, **prep_kw(dkw, rm=.17 if 'z' in draw_opt else None, draw_opt=draw_opt))
+        self.histo(th, stats=True, canvas=canvas, **prep_kw(dkw, rm=.17 if 'z' in draw_opt else None, stats=choose(get_kw('stats', dkw), set_statbox, entries=True, w=.25), draw_opt=draw_opt))
         return th
 
     def histo_3d(self, x, y, zz, binning, title='', **kwargs):
