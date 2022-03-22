@@ -1112,6 +1112,15 @@ def get_3d_profiles(h, opt, err=True):
     return get_x_bins(h, err), px, py
 
 
+def get_3d_correlations(h, opt='yz', q=.8, err=True, z_supp=True):
+    corr = []
+    for ibin in range(1, h.GetNbinsX() + 1):
+        h.GetXaxis().SetRange(ibin, ibin + 1)
+        corr.append(remove_low_stat_bins(h.Project3D(opt), q).GetCorrelationFactor())
+    c = array(corr)
+    return (get_x_bins(h, err)[c != 0], c[c != 0]) if z_supp else (get_x_bins(h, err), c)
+
+
 def get_h_entries(h):
     return array([h.GetBinEntries(ibin) for ibin in range(1, h.GetNbinsX() + 1)])
 
