@@ -579,11 +579,11 @@ class Draw(object):
         self.histo(th, canvas=canvas, **prep_kw(dkw, rm=.17 if 'z' in draw_opt else None, stats=choose(get_kw('stats', dkw), set_statbox, entries=True, w=.25), draw_opt=draw_opt))
         return th
 
-    def histo_3d(self, x, y, zz, binning, title='', **kwargs):
-        th = TH3F(Draw.get_name('h3'), title, *binning)
+    def histo_3d(self, x, y, zz, binning=None, title='', q=.02, **dkw):
+        th = TH3F(Draw.get_name('h3'), title, *find_bins(x, q=q) + find_bins(y, q=q) + find_bins(zz, q=q) if binning is None else binning)
         fill_hist(th, x, y, zz)
-        format_histo(th, **prep_kw(kwargs))
-        self.histo(th, **prep_kw(kwargs, draw_opt='colz', show=False))
+        format_histo(th, **prep_kw(dkw))
+        self.histo(th, **prep_kw(dkw, draw_opt='colz', show=False))
         return th
 
     def efficiency(self, x, e, binning=None, **kwargs):
