@@ -1112,11 +1112,11 @@ def get_3d_profiles(h, opt, err=True):
     return get_x_bins(h, err), px, py
 
 
-def get_3d_correlations(h, opt='yz', q=.8, err=True, z_supp=True):
+def get_3d_correlations(h, opt='yz', thresh=.25, err=True, z_supp=True):
     corr = []
     for ibin in range(1, h.GetNbinsX() + 1):
         h.GetXaxis().SetRange(ibin, ibin + 1)
-        corr.append(remove_low_stat_bins(h.Project3D(opt), q).GetCorrelationFactor())
+        corr.append(remove_low_stat_bins(h.Project3D(opt), thresh, of_max=True).GetCorrelationFactor())
     c = array(corr)
     return (get_x_bins(h, err)[c != 0], c[c != 0]) if z_supp else (get_x_bins(h, err), c)
 
@@ -1378,12 +1378,14 @@ def hide_axis(axis):
     axis.SetTitleOffset(99)
 
 
-def remove_low_stat_bins(h, thresh=.1):
-    e = get_2d_bin_entries(h)
-    e0 = e.flatten()
-    t = mean(e0[e0 > 0]) * thresh
-    e0[e0 < t] = 0
-    set_2d_entries(h, e0.reshape(e.shape))
+def remove_low_stat_bins(h, q=.9, of_max=False):
+    if h.GetEntries() > 0:
+        e = get_2d_bin_entries(h) if 'Profile' in h.ClassName() else get_2d_hist_vec(h, err=False, zero_supp=False, flat=False)
+        e0 = e.flatten()
+        t = q * h.GetMaximum() if of_max else quantile(e0[e0 > 0], q)
+        e0[e0 < t] = 0
+        (set_2d_entries if 'Profile' in h.ClassName() else set_2d_values)(h, e0.reshape(e.shape))
+    return h
 
 
 def get_correlation_arrays(m1, m2, sx=0, sy=0, thresh=.1, flat=False):
