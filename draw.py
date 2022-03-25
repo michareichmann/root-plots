@@ -1253,6 +1253,15 @@ def set_axes_range(xmin, xmax, ymin, ymax, c=None):
     update_canvas()
 
 
+def get_ax_range(h, d='x'):
+    ax = getattr(h, f'Get{d.title()}axis')()
+    return [ax.GetXmin(), ax.GetXmax()]
+
+
+def get_dax(h, d='x'):
+    return diff(get_ax_range(h, d))[0]
+
+
 def set_x_range(xmin, xmax, c=None):
     c = choose(c, get_last_canvas())
     h = c.GetListOfPrimitives()[1]
