@@ -350,7 +350,7 @@ class Draw(object):
         Draw.polygon(x, y, name=name, **kwargs)
 
     @staticmethod
-    def tlatex(x, y, text, name=None, align=20, color=1, size=.05, angle=None, ndc=None, font=None, show=True):
+    def tlatex(x, y, text, name=None, align=20, color=1, size=.05, angle=None, ndc=None, font=42, show=True):
         tlatex = TLatex(x, y, text)
         format_text(tlatex, choose(name, Draw.get_name('t')), align, color, size, angle, ndc, font)
         tlatex.Draw() if show else do_nothing()
