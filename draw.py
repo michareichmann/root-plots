@@ -485,7 +485,8 @@ class Draw(object):
         w += .16 if not Draw.Title and w == 1 else 0  # rectify if there is no title
         th.Sumw2(sumw2) if hasattr(th, 'Sumw2') and sumw2 is not None else do_nothing()
         Draw.set_show(show)
-        c = Draw.canvas(th.GetTitle().split(';')[0], None, None, w, h, logx, logy, logz, gridx or grid, gridy or grid, show=show) if canvas is None else canvas
+        c = get_last_canvas() if canvas is None and 'same' in str(draw_opt) else canvas
+        c = Draw.canvas(th.GetTitle().split(';')[0], None, None, w, h, logx, logy, logz, gridx or grid, gridy or grid, show=show) if c is None else c
         Draw.set_pad_margins(c, *[lm, rm, bm, tm] if m is None else m)
         do([c.SetLogx, c.SetLogy, c.SetLogz], [logx, logy, logz])
         do([c.SetGridx, c.SetGridy], [gridx or grid, gridy or grid])
@@ -526,7 +527,6 @@ class Draw(object):
 
     def function(self, f, title='', c=None, **dkw):
         format_histo(f, title=title, **prep_kw(dkw, **Draw.mode()))
-        c = get_last_canvas() if 'draw_opt' in dkw and 'same' in dkw['draw_opt'] and c is None else c
         self.histo(f, **prep_kw(dkw, canvas=c))
         return f
 
