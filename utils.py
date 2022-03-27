@@ -130,6 +130,10 @@ def prep_kw(dic, **default):
     return d
 
 
+def get_kw(kw, kwargs):
+    return kwargs[kw] if kw in kwargs else None
+
+
 def mean_sigma(values, weights=None, err=True):
     """ Return the weighted average and standard deviation. values, weights -- Numpy ndarrays with the same shape. """
     if len(values) == 1:
@@ -223,31 +227,36 @@ def sum_times(t, fmt='%H:%M:%S'):
 
 class Config(ConfigParser):
 
-    def __init__(self, file_name, **kwargs):
+    def __init__(self, file_name, section=None, **kwargs):
         super(Config, self).__init__(**kwargs)
         self.FilePath = Path(file_name)
         self.read(file_name) if type(file_name) is not list else self.read_file(file_name)
+        self.Section = section
 
     def __repr__(self):
         return f'{self.__class__.__name__}: {join(*self.FilePath.parts[-2:])}'
 
-    def get_value(self, section, option, dtype: type = str, default=None):
+    def set_section(self, sec):
+        self.Section = sec if sec in self else critical(f'No section {sec} in {self}')
+
+    def get_value(self, section, option=None, dtype: type = str, default=None):
         dtype = type(default) if default is not None else dtype
+        s, o = (self.Section, section) if option is None else (section, option)
         try:
             if dtype is bool:
-                return self.getboolean(section, option)
-            v = self.get(section, option)
-            return loads(v) if dtype == list or '[' in v and dtype is not str else dtype(v)
+                return self.getboolean(s, o)
+            v = self.get(s, o)
+            return loads(v) if '[' in v or '{' in v and dtype is not str else dtype(v)
         except (NoOptionError, NoSectionError):
             return default
 
-    def get_values(self, section):
-        return [j for i, j in self.items(section)]
+    def get_values(self, section=None):
+        return [j for i, j in self.items(choose(section, self.Section))]
 
-    def get_list(self, section, option, default=None):
+    def get_list(self, section, option=None, default=None):
         return self.get_value(section, option, list, choose(default, []))
 
-    def get_ufloat(self, section, option, default=None):
+    def get_ufloat(self, section, option=None, default=None):
         return ufloat_fromstr(self.get_value(section, option, default=default))
 
     def show(self):

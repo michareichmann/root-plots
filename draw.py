@@ -353,7 +353,7 @@ class Draw(object):
         Draw.polygon(x, y, name=name, **kwargs)
 
     @staticmethod
-    def tlatex(x, y, text, name=None, align=20, color=1, size=.05, angle=None, ndc=None, font=None, show=True):
+    def tlatex(x, y, text, name=None, align=20, color=1, size=.05, angle=None, ndc=None, font=42, show=True):
         tlatex = TLatex(x, y, text)
         format_text(tlatex, choose(name, Draw.get_name('t')), align, color, size, angle, ndc, font)
         tlatex.Draw() if show else do_nothing()
@@ -488,7 +488,8 @@ class Draw(object):
         w += .16 if not Draw.Title and w == 1 else 0  # rectify if there is no title
         th.Sumw2(sumw2) if hasattr(th, 'Sumw2') and sumw2 is not None else do_nothing()
         Draw.set_show(show)
-        c = Draw.canvas(th.GetTitle().split(';')[0], None, None, w, h, logx, logy, logz, gridx or grid, gridy or grid, show=show) if canvas is None else canvas
+        c = get_last_canvas() if canvas is None and 'same' in str(draw_opt) else canvas
+        c = Draw.canvas(th.GetTitle().split(';')[0], None, None, w, h, logx, logy, logz, gridx or grid, gridy or grid, show=show) if c is None else c
         Draw.set_pad_margins(c, *[lm, rm, bm, tm] if m is None else m)
         do([c.SetLogx, c.SetLogy, c.SetLogz], [logx, logy, logz])
         do([c.SetGridx, c.SetGridy], [gridx or grid, gridy or grid])
@@ -517,11 +518,11 @@ class Draw(object):
              }[m]
         return prep_kw(kwargs, **d)
 
-    def distribution(self, x, binning=None, title='', q=.02, lf=.2, rf=.2, **kwargs):
+    def distribution(self, x, binning=None, title='', q=.02, lf=.2, rf=.2, r=None, w=None, **kwargs):
         if hasattr(x, 'GetName'):
             th = x
         else:
-            th = TH1F(Draw.get_name('h'), title, *choose(binning, find_bins, values=x, q=q, lfac=lf, rfac=rf))
+            th = TH1F(Draw.get_name('h'), title, *choose(binning, find_bins, values=x, q=q, lfac=lf, rfac=rf, r=r, w=w))
             fill_hist(th, x)
         format_histo(th, **prep_kw(kwargs, **Draw.mode(), fill_color=Draw.FillColor, y_tit='Number of Entries' if not th.GetYaxis().GetTitle() else None))
         self.histo(th, **prep_kw(kwargs, stats=None))
@@ -529,7 +530,6 @@ class Draw(object):
 
     def function(self, f, title='', c=None, **dkw):
         format_histo(f, title=title, **prep_kw(dkw, **Draw.mode()))
-        c = get_last_canvas() if 'draw_opt' in dkw and 'same' in dkw['draw_opt'] and c is None else c
         self.histo(f, **prep_kw(dkw, canvas=c))
         return f
 
@@ -540,7 +540,7 @@ class Draw(object):
         self.histo(g, show=show, bm=choose(bm, .24 if bin_labels else None), **kwargs)
         return g
 
-    def profile(self, x, y=None, binning=None, title='', thresh=.02, graph=False, **kwargs):
+    def profile(self, x, y=None, binning=None, title='', thresh=.02, graph=False, **dkw):
         if y is None:
             p = x
         else:
@@ -548,13 +548,11 @@ class Draw(object):
             p = TProfile(Draw.get_name('p'), title, *choose(binning, find_bins, values=x, q=thresh))
             fill_hist(p, x, y)
         p = self.make_graph_from_profile(p) if graph else p
-        set_statbox(entries=True, w=.25)
-        format_histo(p, **prep_kw(kwargs, **Draw.mode(), fill_color=Draw.FillColor))
-        self.histo(p, **prep_kw(kwargs, stats=True))
+        format_histo(p, **prep_kw(dkw, **Draw.mode(), fill_color=Draw.FillColor))
+        self.histo(p, **prep_kw(dkw, stats=choose(get_kw('stats', dkw), set_statbox, entries=True, w=.25)))
         return p
 
-    def prof2d(self, x, y=None, zz=None, binning=None, title='', lm=None, rm=.17, bm=None, show=True, phi=None, theta=None, draw_opt='colz', stats=None,
-               rot=None, mirror=None, centre=None, **kwargs):
+    def prof2d(self, x, y=None, zz=None, binning=None, title='', rot=None, mirror=None, centre=None, **dkw):
         if y is None:
             p = x
         else:
@@ -564,32 +562,31 @@ class Draw(object):
         p = self.rotate_2d(p, rot)
         p = self.flip_2d(p, mirror)
         rx, ry = get_2d_centre_ranges(p, centre)
-        format_histo(p, **prep_kw(kwargs, **Draw.mode(), z_off=1.2, pal=55, stats=stats, x_range=rx, y_range=ry))
-        set_statbox(entries=True, w=.25) if stats is None else do_nothing()
-        self.histo(p, show=show, lm=lm, rm=rm, bm=bm, phi=phi, theta=theta, draw_opt=draw_opt, stats=choose(stats, True), **kwargs)
+        format_histo(p, **prep_kw(dkw, **Draw.mode(), z_off=1.2, pal=55, x_range=rx, y_range=ry))
+        draw_opt = choose(get_kw('draw_opt', dkw), 'colz')
+        self.histo(p, **prep_kw(dkw,  rm=.17 if 'z' in draw_opt else None, stats=choose(get_kw('stats', dkw), set_statbox, entries=True, w=.25), draw_opt=draw_opt))
         return p
 
-    def histo_2d(self, x, y=None, binning=None, title='', lm=None, rm=.17, bm=None, tm=None, show=True, stats=None, canvas=None,
-                 rot=None, mirror=None, centre=None, **kwargs):
+    def histo_2d(self, x, y=None, binning=None, title='', q=.02, canvas=None, rot=None, mirror=None, centre=None, **dkw):
         if y is None:
             th = x
         else:
             x, y = array(x, dtype='d'), array(y, dtype='d')
-            th = TH2F(Draw.get_name('h2'), title, *find_bins(x) + find_bins(y) if binning is None else binning)
+            th = TH2F(Draw.get_name('h2'), title, *find_bins(x, q=q) + find_bins(y, q=q) if binning is None else binning)
             fill_hist(th, x, y)
         th = self.rotate_2d(th, rot)
         th = self.flip_2d(th, mirror)
         rx, ry = get_2d_centre_ranges(th, centre)
-        format_histo(th, **prep_kw(kwargs, **Draw.mode(), z_off=1.2, z_tit='Number of Entries', pal=55, stats=stats, x_range=rx, y_range=ry))
-        set_statbox(entries=True, w=.25) if stats is None else do_nothing()
-        self.histo(th, show=show, lm=lm, rm=rm, bm=bm, tm=tm, stats=choose(stats, True), canvas=canvas, **prep_kw(kwargs, draw_opt='colz'))
+        format_histo(th, **prep_kw(dkw, **Draw.mode(), z_off=1.2, z_tit='Number of Entries', pal=55, x_range=rx, y_range=ry))
+        draw_opt = choose(get_kw('draw_opt', dkw), 'colz')
+        self.histo(th, canvas=canvas, **prep_kw(dkw, rm=.17 if 'z' in draw_opt else None, stats=choose(get_kw('stats', dkw), set_statbox, entries=True, w=.25), draw_opt=draw_opt))
         return th
 
-    def histo_3d(self, x, y, zz, binning, title='', **kwargs):
-        th = TH3F(Draw.get_name('h3'), title, *binning)
+    def histo_3d(self, x, y, zz, binning=None, title='', q=.02, **dkw):
+        th = TH3F(Draw.get_name('h3'), title, *find_bins(x, q=q) + find_bins(y, q=q) + find_bins(zz, q=q) if binning is None else binning)
         fill_hist(th, x, y, zz)
-        format_histo(th, **prep_kw(kwargs))
-        self.histo(th, **prep_kw(kwargs, draw_opt='colz', show=False))
+        format_histo(th, **prep_kw(dkw))
+        self.histo(th, **prep_kw(dkw, draw_opt='colz', show=False))
         return th
 
     def efficiency(self, x, e, binning=None, **kwargs):
@@ -746,7 +743,7 @@ class Draw(object):
     def make_legend(x2=None, y2=None, w=.25, nentries=2, scale=1, ts=None, d=.01, y1=None, x1=None, clean=False, margin=.25, cols=None, fix=False, bottom=False, left=False, c=None, **kwargs):
         _ = kwargs
         use_margins = y2 is None
-        h = nentries * .05 * scale
+        h = nentries // choose(cols, 1) * .05 * scale
         x2, y2 = get_stat_margins(c, x2, y2, d, bottom, left, h, w)
         x1 = choose(x1, x2 - w)
         y1 = choose(y1, y2 - h)
@@ -965,8 +962,8 @@ def set_2d_ranges(h, dx, dy):
     format_histo(h, x_range=[xmid - dx, xmid + dx], y_range=[ymid - dy, ymid + dx])
 
 
-def find_bins(values, lfac=.2, rfac=.2, q=.02, n=1, lq=None, w=None, x0=None):
-    width, (xmin, xmax) = choose(w, bin_width(values) * n), find_range(values, lfac, rfac, q, lq)
+def find_bins(values, lfac=.2, rfac=.2, q=.02, n=1, lq=None, w=None, x0=None, r=None):
+    width, (xmin, xmax) = choose(w, bin_width(values) * n), find_range(values, lfac, rfac, q, lq) if r is None else r
     bins = arange(choose(x0, xmin), xmax + width, width)
     return [bins.size - 1, bins]
 
@@ -1130,6 +1127,15 @@ def get_3d_profiles(h, opt, err=True):
     return get_x_bins(h, err), px, py
 
 
+def get_3d_correlations(h, opt='yz', thresh=.25, err=True, z_supp=True):
+    corr = []
+    for ibin in range(1, h.GetNbinsX() + 1):
+        h.GetXaxis().SetRange(ibin, ibin + 1)
+        corr.append(remove_low_stat_bins(h.Project3D(opt), thresh, of_max=True).GetCorrelationFactor())
+    c = array(corr)
+    return (get_x_bins(h, err)[c != 0], c[c != 0]) if z_supp else (get_x_bins(h, err), c)
+
+
 def get_h_entries(h):
     return array([h.GetBinEntries(ibin) for ibin in range(1, h.GetNbinsX() + 1)])
 
@@ -1262,6 +1268,15 @@ def set_axes_range(xmin, xmax, ymin, ymax, c=None):
     update_canvas()
 
 
+def get_ax_range(h, d='x'):
+    ax = getattr(h, f'Get{d.title()}axis')()
+    return [ax.GetXmin(), ax.GetXmax()]
+
+
+def get_dax(h, d='x'):
+    return diff(get_ax_range(h, d))[0]
+
+
 def set_x_range(xmin, xmax, c=None):
     c = choose(c, get_last_canvas())
     h = c.GetListOfPrimitives()[1]
@@ -1387,12 +1402,14 @@ def hide_axis(axis):
     axis.SetTitleOffset(99)
 
 
-def remove_low_stat_bins(h, thresh=.1):
-    e = get_2d_bin_entries(h)
-    e0 = e.flatten()
-    t = mean(e0[e0 > 0]) * thresh
-    e0[e0 < t] = 0
-    set_2d_entries(h, e0.reshape(e.shape))
+def remove_low_stat_bins(h, q=.9, of_max=False):
+    if h.GetEntries() > 0:
+        e = get_2d_bin_entries(h) if 'Profile' in h.ClassName() else get_2d_hist_vec(h, err=False, zero_supp=False, flat=False)
+        e0 = e.flatten()
+        t = q * h.GetMaximum() if of_max else quantile(e0[e0 > 0], q)
+        e0[e0 < t] = 0
+        (set_2d_entries if 'Profile' in h.ClassName() else set_2d_values)(h, e0.reshape(e.shape))
+    return h
 
 
 def get_correlation_arrays(m1, m2, sx=0, sy=0, thresh=.1, flat=False):
