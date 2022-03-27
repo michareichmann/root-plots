@@ -16,6 +16,9 @@ from .utils import *
 from .info import Info
 
 
+# TODO: add binning class
+
+
 class FitRes(ndarray):
 
     def __new__(cls, f):
@@ -974,6 +977,18 @@ def find_2d_bins(x, y, lfac=.2, rfac=.2, q=.02, n=1, lq=None, w=None, x0=None):
 
 def find_range(values, lfac=.2, rfac=.2, q=.02, lq=None):
     return ax_range(*quantile(values, [choose(lq, q), 1 - q]), lfac, rfac)
+
+
+def bins_from_uvec(x):
+    return [x.size, append([i.n - i.s for i in x], x[-1].n + x[-1].s).astype('d')]
+
+
+def bins_from_vec(x, centre=False):
+    if centre:
+        w0 = (x[1] - x[0])
+        x = append(x, x[-1] + w0)
+        x -= append(w0 / 2, diff(x) / 2)
+    return [x.size - 1, x]
 
 
 def fix_chi2(g, prec=.01, show=True):
