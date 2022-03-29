@@ -134,6 +134,13 @@ def get_kw(kw, kwargs):
     return kwargs[kw] if kw in kwargs else None
 
 
+def rm_key(d, key):
+    d = deepcopy(d)
+    if key in d:
+        del d[key]
+    return d
+
+
 def mean_sigma(values, weights=None, err=True):
     """ Return the weighted average and standard deviation. values, weights -- Numpy ndarrays with the same shape. """
     if len(values) == 1:
