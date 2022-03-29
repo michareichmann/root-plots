@@ -533,6 +533,13 @@ class Draw(object):
         self.histo(f, **prep_kw(dkw, canvas=c))
         return f
 
+    def functions(self, f, leg_titles=None, wl=.2, **dkw):
+        y_range = [min([i.GetMinimum() for i in f]), 1.1 * max([i.GetMaximum() for i in f])]
+        self(f[0], **prep_kw(dkw, y_range=y_range, color=self.get_color(len(f))))
+        self.legend(f, leg_titles, 'l', w=wl, **rm_key(dkw, 'w'))
+        [self(i, draw_opt='same', **prep_kw(dkw, color=self.get_color(len(f)))) for i in f[1:]]
+        return get_last_canvas()
+
     def graph(self, x, y=None, title='', bm=None, show=True, bin_labels=None, **kwargs):
         g = x if y is None else Draw.make_tgrapherrors(x, y)
         format_histo(g, title=title, **prep_kw(kwargs, **Draw.mode(), fill_color=Draw.FillColor))
@@ -626,7 +633,7 @@ class Draw(object):
         y_range = ax_range(get_graph_y(graphs, err=False), 0, .3, .6)
         format_histo(m, draw_first=True, **prep_kw(kwargs, **Draw.mode(1, y_off=g0.GetYaxis().GetTitleOffset()), y_range=y_range, x_tit=choose('', None, bin_labels)))
         set_bin_labels(m, bin_labels)
-        leg = self.legend(graphs, leg_titles, 'p', w=wleg) if leg_titles else None
+        leg = self.legend(graphs, leg_titles, draw_opt, w=wleg) if leg_titles else None
         self.histo(m, **prep_kw(kwargs, leg=leg, bm=choose(.26, None, bin_labels), draw_opt='ap'))
         return m
 
