@@ -596,18 +596,17 @@ class Draw(object):
         th = self.distribution(x, choose(binning, find_bins, values=x[x != 0], lfac=.5, rfac=.5, n=2), x_tit=h.GetYaxis().GetTitle(), **kwargs)
         return th if ret_h else mean_sigma(x[x != 0])
 
-    def stack(self, histos, title, leg_titles, scale=False, fill=None, w=.2, **dkw):
+    def stack(self, histos, title='', leg_titles=None, scale=False, fill=None, w=.2, **dkw):
         s = THStack(Draw.get_name('s'), title)
-        leg = Draw.make_legend(nentries=len(histos), w=w)
-        for h, tit in zip(histos, leg_titles):
+        for h in histos:
             s.Add(h, 'hist')
-            leg.AddEntry(h, tit, choose('lf', 'l', fill))
             color = self.get_color(len(histos))
             format_histo(h, color=color, fill_color=choose(color, 0, fill), fill_style=choose(1001, 4000, fill), stats=0, **dkw)
             if scale:
                 h.Scale(1 / h.GetMaximum())
         h0 = histos[0]
         format_histo(s, draw_first=True, x_tit=h0.GetXaxis().GetTitle(), y_tit=h0.GetYaxis().GetTitle(), y_off=h0.GetYaxis().GetTitleOffset())
+        leg = self.legend(histos, leg_titles, 'p', w=w) if leg_titles else None
         self.histo(s, **prep_kw(dkw, draw_opt='nostack', leg=leg, lm=get_last_canvas().GetLeftMargin()))
         return s
 
@@ -1394,6 +1393,7 @@ def remove_low_stat_bins(h, q=.9, of_max=False):
         t = q * h.GetMaximum() if of_max else quantile(e0[e0 > 0], q)
         e0[e0 < t] = 0
         (set_2d_entries if 'Profile' in h.ClassName() else set_2d_values)(h, e0.reshape(e.shape))
+        update_canvas()
     return h
 
 
