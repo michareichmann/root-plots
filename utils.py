@@ -233,6 +233,10 @@ class Config(ConfigParser):
         self.read(file_name) if type(file_name) is not list else self.read_file(file_name)
         self.Section = section
 
+    def __call__(self, section):
+        self.set_section(section)
+        return self
+
     def __repr__(self):
         return f'{self.__class__.__name__}: {join(*self.FilePath.parts[-2:])}' + (f' (section = {self.Section})' if self.Section else '')
 
