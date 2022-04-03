@@ -234,7 +234,7 @@ class Config(ConfigParser):
         self.Section = section
 
     def __repr__(self):
-        return f'{self.__class__.__name__}: {join(*self.FilePath.parts[-2:])}'
+        return f'{self.__class__.__name__}: {join(*self.FilePath.parts[-2:])}' + (f' (section = {self.Section})' if self.Section else '')
 
     def set_section(self, sec):
         self.Section = sec if sec in self else critical(f'No section {sec} in {self}')
