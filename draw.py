@@ -1295,6 +1295,7 @@ def set_time_axis(histo, form='%H:%M', off=0, axis='X'):
     ax.SetTimeFormat(form)
     ax.SetTimeOffset(-off - 3600 if off else 0)
     ax.SetTimeDisplay(1)
+    update_canvas()
 
 
 def find_mpv_fwhm(histo, bins=15):
