@@ -11,7 +11,7 @@ from os.path import dirname, realpath, exists, isfile, join
 from time import time
 from pathlib import Path
 
-from numpy import array, zeros, count_nonzero, sqrt, average, full, all, quantile, arctan2, cos, sin, corrcoef
+from numpy import array, zeros, count_nonzero, sqrt, average, full, all, quantile, arctan2, cos, sin, corrcoef, isfinite
 from uncertainties import ufloat_fromstr, ufloat
 from uncertainties.core import Variable, AffineScalarFunc
 
@@ -169,7 +169,7 @@ def freedman_diaconis(x):
 
 
 def bin_width(x):
-    w = freedman_diaconis(x)
+    w = freedman_diaconis(x[isfinite(x)])
     return w if w else 3.49 * mean_sigma(x)[1].n / x.size ** (1 / 3)
 
 

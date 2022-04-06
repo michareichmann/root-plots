@@ -969,7 +969,7 @@ def find_2d_bins(x, y, lfac=.2, rfac=.2, q=.02, n=1, lq=None, w=None, x0=None):
 
 
 def find_range(values, lfac=.2, rfac=.2, q=.02, lq=None):
-    return ax_range(*quantile(values, [choose(lq, q), 1 - q]), lfac, rfac)
+    return ax_range(*quantile(values[isfinite(values)], [choose(lq, q), 1 - q]), lfac, rfac)
 
 
 def fix_chi2(g, prec=.01, show=True):
