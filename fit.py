@@ -15,7 +15,7 @@ class Fit(object):
         self.Draw = Draw(join(BaseDir, 'config', 'main.ini'))
 
         # Range and Values
-        self.XMin, self.XMax = [0, 1000] if fit_range is None else fit_range
+        self.XMin, self.XMax = choose(fit_range, self.find_fit_range)
         if h is not None:
             self.Values = get_h_values(h)
             self.X = get_graph_x(h) if 'TGraph' in h.ClassName() else get_hist_args(h)
@@ -44,6 +44,9 @@ class Fit(object):
 
     def init_fit(self):
         return TF1()
+
+    def find_fit_range(self):
+        return [0, 1000]
 
     def set_parameters(self, *pars):
         self.Fit.SetParameters(*pars)
