@@ -145,13 +145,20 @@ class Expo(Fit):
 
 
 class Gauss(Fit):
-    def __init__(self, h=None, fit_range=None, npx=100, fl=3, fh=3, **fkw):
+    def __init__(self, h=None, fit_range=None, npx=100, fl=3, fh=3, thresh=.01, **fkw):
         self.Fl, self.Fh = fl, fh
         self.Format = fkw
+        self.T = thresh
         Fit.__init__(self, 'Gauss', h, fit_range, npx)
 
     def init_fit(self):
         return self.Draw.make_f(Draw.get_name('gau'), 'gaus', *ax_range(self.XMin, self.XMax, self.Fl, self.Fh), **self.Format)
+
+    def find_fit_range(self):
+        if self.Histo is not None:
+            h = self.Histo
+            ymax = h.GetMaximum()
+            return [h.GetBinCenter(f(self.T * ymax)) for f in [h.FindFirstBinAbove, h.FindLastBinAbove]]
 
 
 class Landau(Fit):
