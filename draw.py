@@ -559,7 +559,7 @@ class Draw(object):
         self.histo(p, **prep_kw(dkw, stats=choose(get_kw('stats', dkw), set_statbox, entries=True, w=.25)))
         return p
 
-    def prof2d(self, x, y=None, zz=None, binning=None, title='', rot=None, mirror=None, centre=None, **dkw):
+    def prof2d(self, x, y=None, zz=None, binning=None, title='', qz=None, z0=None, rot=None, mirror=None, centre=None, **dkw):
         if y is None:
             p = x
         else:
@@ -568,13 +568,13 @@ class Draw(object):
             fill_hist(p, x, y, uarr2n(zz))
         p = self.rotate_2d(p, rot)
         p = self.flip_2d(p, mirror)
-        rx, ry = get_2d_centre_ranges(p, centre)
-        format_histo(p, **prep_kw(dkw, **Draw.mode(), z_off=1.2, pal=55, x_range=rx, y_range=ry))
+        (rx, ry), rz = get_2d_centre_ranges(p, centre), find_z_range(p, qz, z0)
+        format_histo(p, **prep_kw(dkw, **Draw.mode(), z_off=1.2, pal=55, x_range=rx, y_range=ry, z_range=rz))
         draw_opt = choose(get_kw('draw_opt', dkw), 'colz')
         self.histo(p, **prep_kw(dkw,  rm=.17 if 'z' in draw_opt else None, stats=choose(get_kw('stats', dkw), set_statbox, entries=True, w=.25), draw_opt=draw_opt))
         return p
 
-    def histo_2d(self, x, y=None, binning=None, title='', q=.02, canvas=None, rot=None, mirror=None, centre=None, **dkw):
+    def histo_2d(self, x, y=None, binning=None, title='', q=.02, qz=None, z0=None, canvas=None, rot=None, mirror=None, centre=None, **dkw):
         if y is None:
             th = x
         else:
@@ -583,8 +583,8 @@ class Draw(object):
             fill_hist(th, x, y)
         th = self.rotate_2d(th, rot)
         th = self.flip_2d(th, mirror)
-        rx, ry = get_2d_centre_ranges(th, centre)
-        format_histo(th, **prep_kw(dkw, **Draw.mode(), z_off=1.2, z_tit='Number of Entries', pal=55, x_range=rx, y_range=ry))
+        (rx, ry), rz = get_2d_centre_ranges(th, centre), find_z_range(th, qz, z0)
+        format_histo(th, **prep_kw(dkw, **Draw.mode(), z_off=1.2, z_tit='Number of Entries', pal=55, x_range=rx, y_range=ry, z_range=rz))
         draw_opt = choose(get_kw('draw_opt', dkw), 'colz')
         self.histo(th, canvas=canvas, **prep_kw(dkw, rm=.17 if 'z' in draw_opt else None, stats=choose(get_kw('stats', dkw), set_statbox, entries=True, w=.25), draw_opt=draw_opt))
         return th
@@ -1224,6 +1224,13 @@ def ax_range(low: Any = None, high=None, fl=0., fh=0., h=None, rnd=False, thresh
     d = abs(high - low)
     l, h = low - d * fl, high + d * fh
     return [int(l), int(ceil(h))] if rnd else [l, h]
+
+
+def find_z_range(h, q=None, z0=None):
+    if q is not None:
+        x = get_2d_bin_entries(h, flat=True) if 'Profile' in h.ClassName() else get_2d_hist_vec(h, err=False, flat=True)
+        zmin, zmax = choose(z0, quantile, a=x, q=1 - q), quantile(x, q)
+        return [zmin, zmax]
 
 
 def set_drawing_range(h, legend=True, lfac=None, rfac=None, thresh=None):
