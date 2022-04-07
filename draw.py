@@ -1178,6 +1178,10 @@ def set_palette(*pal):
     gStyle.SetPalette(*pal) if pal else do_nothing()
 
 
+def set_n_palette(n):
+    set_palette(n + 1, append(0, Draw.get_colors(n)).astype('i'))
+
+
 def is_graph(h):
     return 'Graph' in h.ClassName()
 
