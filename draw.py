@@ -1228,7 +1228,7 @@ def ax_range(low: Any = None, high=None, fl=0., fh=0., h=None, rnd=False, thresh
 
 def find_z_range(h, q=None, z0=None):
     if q is not None:
-        x = get_2d_bin_entries(h, flat=True) if 'Profile' in h.ClassName() else get_2d_hist_vec(h, err=False, flat=True)
+        x = get_2d_hist_vec(h, err=False, flat=True, zero_supp=False)
         zmin, zmax = choose(z0, quantile, a=x, q=1 - q), quantile(x, q)
         return [zmin, zmax]
 
