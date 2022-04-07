@@ -1048,13 +1048,13 @@ def get_graph_vecs(g, err=True):
 
 
 def get_graph_x(g, err=True):
-    return make_ufloat(frombuffer(g.GetX()), frombuffer(g.GetEX())) if err else frombuffer(g.GetX())
+    return make_ufloat(frombuffer(g.GetX()), frombuffer(g.GetEX())) if err and 'Error' in g.ClassName() else frombuffer(g.GetX())
 
 
 def get_graph_y(g, err=True):
     if is_iter(g):
         return array([v for ig in g for v in get_graph_y(ig, err)])
-    return make_ufloat(frombuffer(g.GetY()), frombuffer(g.GetEY())) if err else frombuffer(g.GetY())
+    return make_ufloat(frombuffer(g.GetY()), frombuffer(g.GetEY())) if err and 'Error' in g.ClassName() else frombuffer(g.GetY())
 
 
 def get_hist_vec(p, err=True):
