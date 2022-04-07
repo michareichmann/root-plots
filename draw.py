@@ -537,12 +537,12 @@ class Draw(object):
         self.histo(g, show=show, bm=choose(bm, .24 if bin_labels else None), **kwargs)
         return g
 
-    def profile(self, x, y=None, binning=None, title='', thresh=.02, graph=False, **dkw):
+    def profile(self, x, y=None, binning=None, title='', q=.02, w=None, x0=None, graph=False, **dkw):
         if y is None:
             p = x
         else:
             x, y = array(x, dtype='d'), array(y, dtype='d')
-            p = TProfile(Draw.get_name('p'), title, *choose(binning, find_bins, values=x, q=thresh))
+            p = TProfile(Draw.get_name('p'), title, *choose(binning, find_bins, values=x, q=q, w=w, x0=x0))
             fill_hist(p, x, y)
         p = self.make_graph_from_profile(p) if graph else p
         format_histo(p, **prep_kw(dkw, **Draw.mode(), fill_color=Draw.FillColor))
@@ -586,8 +586,8 @@ class Draw(object):
         self.histo(th, **prep_kw(dkw, draw_opt='colz', show=False))
         return th
 
-    def efficiency(self, x, e, binning=None, **kwargs):
-        p = self.profile(x, e, binning, show=False)
+    def efficiency(self, x, e, binning=None, q=.02, w=None, x0=None, **kwargs):
+        p = self.profile(x, e, binning, q=q, w=w, x0=x0, show=False)
         x, y = get_hist_args(p), array([calc_eff(p0 * n, n) if n else [-1, 0, 0] for p0, n in [[p.GetBinContent(ibin), p.GetBinEntries(ibin)] for ibin in range(1, p.GetNbinsX() + 1)]])
         return self.graph(x[y[:, 0] != -1], y[y[:, 0] != -1], **prep_kw(kwargs, title='Efficiency', y_tit='Efficiency [%]'))
 
