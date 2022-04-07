@@ -9,7 +9,7 @@ from typing import Any
 
 from ROOT import TGraphErrors, TGaxis, TLatex, TGraphAsymmErrors, TCanvas, gStyle, TLegend, TArrow, TPad, TCutG, TLine, TPaveText, TPaveStats, TH1F, TEllipse, TColor, TProfile
 from ROOT import TProfile2D, TH2F, TH3F, THStack, TMultiGraph, TPie, gROOT, TF1
-from numpy import sign, linspace, ones, ceil, append, tile, absolute, rot90, flip, argsort, ndarray, arange, diff, pi, frombuffer, mean, concatenate, where, roll
+from numpy import sign, linspace, ones, ceil, append, tile, absolute, rot90, flip, argsort, ndarray, arange, diff, pi, frombuffer, mean, concatenate, where, roll, indices
 from screeninfo import get_monitors, Monitor, common
 
 from .utils import *
@@ -519,7 +519,7 @@ class Draw(object):
         return prep_kw(kwargs, **d)
 
     def distribution(self, x, binning=None, title='', q=.02, lf=.2, rf=.2, r=None, w=None, x0=None, **kwargs):
-        if hasattr(x, 'GetName'):
+        if is_root_object(x):
             th = x
         else:
             th = TH1F(Draw.get_name('h'), title, *choose(binning, find_bins, values=x, q=q, lfac=lf, rfac=rf, r=r, w=w, x0=x0))
@@ -560,9 +560,10 @@ class Draw(object):
         return p
 
     def prof2d(self, x, y=None, zz=None, binning=None, title='', qz=None, z0=None, rot=None, mirror=None, centre=None, **dkw):
-        if y is None:
+        if is_root_object(x):
             p = x
         else:
+            x, y, zz = arr2coods(x) if y is None else (x, y, zz)
             dflt_bins = find_bins(x) + find_bins(y) if binning is None else None
             p = TProfile2D(Draw.get_name('p2'), title, *choose(binning, dflt_bins))
             fill_hist(p, x, y, uarr2n(zz))
@@ -980,6 +981,11 @@ def find_2d_bins(x, y, lfac=.2, rfac=.2, q=.02, n=1, lq=None, w=None, x0=None):
 
 def find_range(values, lfac=.2, rfac=.2, q=.02, lq=None):
     return ax_range(*quantile(values[isfinite(values)], [choose(lq, q), 1 - q]), lfac, rfac)
+
+
+def arr2coods(a):
+    i = indices(a.shape)
+    return i[0].flatten(), i[1].flatten(), a.flatten()
 
 
 def bins_from_uvec(x):
@@ -1453,6 +1459,10 @@ def set_root_warnings(status, fatal=False):
 def set_root_output(status=True):
     gROOT.SetBatch(not status)
     set_root_warnings(status)
+
+
+def is_root_object(o):
+    return hasattr(o, 'GetName')
 
 
 if __name__ == '__main__':
