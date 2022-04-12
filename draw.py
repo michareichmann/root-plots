@@ -11,6 +11,8 @@ from ROOT import TGraphErrors, TGaxis, TLatex, TGraphAsymmErrors, TCanvas, gStyl
 from ROOT import TProfile2D, TH2F, TH3F, THStack, TMultiGraph, TPie, gROOT, TF1
 from numpy import sign, linspace, ones, ceil, append, tile, absolute, rot90, flip, argsort, ndarray, arange, diff, pi, frombuffer, mean, concatenate, where, roll, indices
 from screeninfo import get_monitors, Monitor, common
+from scipy.stats import binned_statistic
+from warnings import catch_warnings, simplefilter
 
 from .utils import *
 from .info import Info
@@ -984,6 +986,10 @@ def find_bins(values, lfac=.2, rfac=.2, q=.02, n=1, lq=None, w=None, x0=None, r=
     return [bins.size - 1, bins]
 
 
+def nbins(x):
+    return int((x.max() - x.min()) / bin_width(x))
+
+
 def find_2d_bins(x, y, lfac=.2, rfac=.2, q=.02, n=1, lq=None, w=None, x0=None):
     return sum([find_bins(i, lfac, rfac, q, n, lq, w, x0) for i in [x, y]], start=[])
 
@@ -1476,6 +1482,15 @@ def set_root_output(status=True):
 
 def is_root_object(o):
     return hasattr(o, 'GetName')
+
+
+def np_profile(x, y, u=False):
+    with catch_warnings():
+        simplefilter("ignore")
+        m, s, n = [binned_statistic(x, y.astype('d'), bins=nbins(x), statistic=stat) for stat in ['mean', 'std', 'count']]
+        c = n[0] > 1
+        b, m, s, n = m[1], m[0][c], s[0][c], n[0][c]
+        return ((b[:-1] + diff(b) / 2)[c], ) + ((arr2u(m, s / sqrt(n)), ) if u else (m, s / sqrt(n)))
 
 
 if __name__ == '__main__':
