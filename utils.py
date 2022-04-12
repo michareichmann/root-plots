@@ -134,8 +134,8 @@ def prep_kw(dic, **default):
     return d
 
 
-def get_kw(kw, kwargs):
-    return kwargs[kw] if kw in kwargs else None
+def get_kw(kw, kwargs, default=None):
+    return kwargs[kw] if kw in kwargs else default
 
 
 def rm_key(d, key):
