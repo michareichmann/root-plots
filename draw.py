@@ -451,11 +451,9 @@ class Draw(object):
         Draw.add(fr)
 
     @staticmethod
-    def grid(x_vals, y_vals, width=1, color=1):
-        for x in x_vals:
-            Draw.line(x, x, min(y_vals), max(y_vals), width=width, color=color)
-        for y in y_vals:
-            Draw.line(min(x_vals), max(x_vals), y, y, width=width, color=color)
+    def grid(x_vals, y_vals, **dkw):
+        lx = [Draw.line(x, x, min(y_vals), max(y_vals), **prep_kw(dkw, width=1, color=1)) for x in x_vals]
+        return lx + [Draw.line(min(x_vals), max(x_vals), y, y, **prep_kw(dkw, width=1, color=1)) for y in y_vals]
 
     @staticmethod
     def ellipse(a=1, b=1, x_off=0, y_off=0, color=2, w=2, fill=False, fill_color=None, show=True):
