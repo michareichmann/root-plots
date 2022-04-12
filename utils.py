@@ -5,7 +5,7 @@
 from configparser import ConfigParser, NoOptionError, NoSectionError
 from copy import deepcopy
 from datetime import datetime
-from json import loads
+from json import loads, load
 from os import _exit, makedirs, remove
 from os.path import dirname, realpath, exists, isfile, join
 from time import time
@@ -236,12 +236,20 @@ def sum_times(t, fmt='%H:%M:%S'):
     return sum(array([datetime.strptime(i, fmt) for i in t]) - datetime.strptime('0', '%H'))
 
 
+def load_json(filename):
+    if not isfile(filename):
+        warning(f'json file does not exist: {filename}')
+        return {}
+    with open(filename) as f:
+        return load(f)
+
+
 class Config(ConfigParser):
 
-    def __init__(self, file_name, section=None, **kwargs):
+    def __init__(self, file_name, section=None, from_json=False, **kwargs):
         super(Config, self).__init__(**kwargs)
         self.FilePath = Path(file_name)
-        self.read(file_name) if type(file_name) is not list else self.read_file(file_name)
+        self.read_dict(load_json(file_name)) if from_json else self.read(file_name) if type(file_name) is not list else self.read_file(file_name)
         self.Section = section
 
     def __call__(self, section):
@@ -261,15 +269,18 @@ class Config(ConfigParser):
             if dtype is bool:
                 return self.getboolean(s, o)
             v = self.get(s, o)
-            return loads(v) if '[' in v or '{' in v and dtype is not str else dtype(v)
-        except (NoOptionError, NoSectionError):
+            return loads(v.replace('\'', '\"')) if '[' in v or '{' in v and dtype is not str else dtype(v)
+        except (NoOptionError, NoSectionError, ValueError):
             return default
 
     def get_values(self, section=None):
-        return [j for i, j in self.items(choose(section, self.Section))]
+        return [*self[choose(section, self.Section)].values()]
 
     def get_list(self, section, option=None, default=None):
         return self.get_value(section, option, list, choose(default, []))
+
+    def get_float(self, section: str, option: str = None) -> float:
+        return self.get_value(section, option, float)
 
     def get_ufloat(self, section, option=None, default=None):
         return ufloat_fromstr(self.get_value(section, option, default=default))
