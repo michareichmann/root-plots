@@ -724,7 +724,7 @@ class Draw(object):
         return Draw.add(f)
 
     @staticmethod
-    def make_tf1(name, f, xmin=0, xmax=1, pars0: Any = 0, color=None, w=None, style=None, title='', npx=None, *args, **kwargs):
+    def make_tf1(name, f, xmin=0, xmax=1, pars0: Any = 0, color=None, w=None, style=None, title=None, npx=None, *args, **kwargs):
         def tmp(x, pars):
             return f(x[0], pars, *args, **kwargs) if 'pars' in signature(f).parameters else f(x[0], *args, **kwargs)
 
@@ -732,7 +732,7 @@ class Draw(object):
         f0 = TF1(choose(name, Draw.get_name('f')), tmp, xmin, xmax, len(pars0) if is_iter(pars0) else pars0)
         [f0.SetParameter(i, p) for i, p in enumerate(pars0)] if is_iter(pars0) else do_nothing()
         do(f0.SetNpx, npx)
-        format_histo(f0, title, line_color=color, line_style=style, lw=w)
+        format_histo(f0, choose(title, name), line_color=color, line_style=style, lw=w)
         return Draw.add(f0)
 
     @staticmethod
