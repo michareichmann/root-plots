@@ -21,24 +21,24 @@ def math(txt):
     return f'${txt}$'
 
 
-def unit(txt, custom=False):
-    return f('unit', '' if custom else "\\" + txt)
+def unit(*txt, custom=False):
+    return f('unit', ''.join(f' {t}' if custom else f(t) for t in txt))
 
 
 def si(*v, fmt='.1f', unt=None):
-    return num(*v, fmt=fmt) if unt is None else [f('SI', f'{float(i):{fmt}}', f'\\{unt}').replace('/', '') for i in v]
+    return num(*v, fmt=fmt) if unt is None else [f('SI', f'{i:{fmt}}', f'\\{unt}').replace('/', '') for i in v]
 
 
 def num(*v, fmt='.1f'):
-    return [f('num', f'{float(i):{fmt}}').replace('/', '') for i in v]
+    return [f('num', f'{i:{fmt}}').replace('/', '') for i in v]
 
 
 def si_range(v0, v1, fmt='.0f', unt=None):
-    return num_range(v0, v1, fmt) if unt is None else f('SIrange', f'{float(v0):{fmt}}', f'{float(v1):{fmt}}', f'\\{unt}')
+    return num_range(v0, v1, fmt) if unt is None else f('SIrange', f'{v0:{fmt}}', f'{float(v1):{fmt}}', f'\\{unt}')
 
 
 def num_range(v0, v1, fmt='.0f'):
-    return f('numrange', f'{float(v0):{fmt}}', f'{float(v1):{fmt}}')
+    return f('numrange', f'{v0:{fmt}}', f'{v1:{fmt}}')
 
 
 def hline(word):
