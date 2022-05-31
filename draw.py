@@ -610,9 +610,11 @@ class Draw(object):
         x, y = get_hist_args(p), array([calc_eff(p0 * n, n) if n else [-1, 0, 0] for p0, n in [[p.GetBinContent(ibin), p.GetBinEntries(ibin)] for ibin in range(1, p.GetNbinsX() + 1)]])
         return self.graph(x[y[:, 0] != -1], y[y[:, 0] != -1], **prep_kw(kwargs, title='Efficiency', y_tit='Efficiency [%]'))
 
-    def pull(self, h, binning=None, ret_h=False, **kwargs):
-        x = get_graph_y(h, err=False) if is_graph(h) else get_hist_vec(h, err=False)
-        th = self.distribution(x, choose(binning, find_bins, values=x[x != 0], lfac=.5, rfac=.5, n=2), x_tit=h.GetYaxis().GetTitle(), **kwargs)
+    def pull(self, h, binning=None, ret_h=False, **dkw):
+        x = h if type(h) in [list, ndarray] else get_h_values(h)
+        m, s = mean_sigma(x)
+        x = uarr2n((x - m) / s)
+        th = self.distribution(x, binning, **prep_kw(dkw, rf=.5, lf=.5, n=2, x_tit=h.GetYaxis().GetTitle() if hasattr(h, 'Class') else None))
         return th if ret_h else mean_sigma(x[x != 0])
 
     def stack(self, histos, title='', leg_titles=None, scale=False, fill=None, w=.2, **dkw):
