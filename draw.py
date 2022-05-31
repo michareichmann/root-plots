@@ -526,11 +526,11 @@ class Draw(object):
              }[m]
         return prep_kw(kwargs, **d)
 
-    def distribution(self, x, binning=None, title='', q=.02, lf=.2, rf=.2, r=None, w=None, x0=None, **kwargs):
+    def distribution(self, x, binning=None, title='', q=.02, lf=.2, rf=.2, n=1, r=None, w=None, x0=None, **kwargs):
         if is_root_object(x):
             th = x
         else:
-            th = TH1F(Draw.get_name('h'), title, *choose(binning, find_bins, values=x, q=q, lfac=lf, rfac=rf, r=r, w=w, x0=x0))
+            th = TH1F(Draw.get_name('h'), title, *choose(binning, find_bins, values=x, q=q, n=n, lfac=lf, rfac=rf, r=r, w=w, x0=x0))
             fill_hist(th, x)
         format_histo(th, **prep_kw(kwargs, **Draw.mode(), fill_color=Draw.FillColor, y_tit='Number of Entries' if not th.GetYaxis().GetTitle() else None))
         self.histo(th, **prep_kw(kwargs, stats=None))
