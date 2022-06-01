@@ -29,6 +29,10 @@ def si(*v, fmt='.1f', unt=None):
     return num(*v, fmt=fmt) if unt is None else [f('SI', f'{i:{fmt}}', f'\\{unt}').replace('/', '') for i in v]
 
 
+def si_2err(*v, fmt='.1f', unt=None):
+    return f('SIserr', *[f'{i:{fmt}}' for i in v], f(unt))
+
+
 def num(*v, fmt='.1f'):
     return [f('num', f'{i:{fmt}}').replace('/', '') for i in v]
 
