@@ -106,6 +106,10 @@ def uarr2n(arr):
     return array([i.n for i in arr]) if len(arr) and is_ufloat(arr[0]) else arr
 
 
+def uarr2s(arr):
+    return array([i.s for i in arr]) if len(arr) and is_ufloat(arr[0]) else arr
+
+
 def arr2u(x, ex):
     return array([ufloat(i, e) for i, e in zip(x, ex)])
 
