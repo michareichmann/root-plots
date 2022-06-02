@@ -614,7 +614,7 @@ class Draw(object):
         x = h if type(h) in [list, ndarray] else get_h_values(h)
         m, s = mean_sigma(x)
         x = uarr2n((x - m) / s)
-        th = self.distribution(x, binning, **prep_kw(dkw, rf=.5, lf=.5, n=2, x_tit=h.GetYaxis().GetTitle() if hasattr(h, 'Class') else None))
+        th = self.distribution(x, binning, **prep_kw(dkw, rf=.5, lf=.5, n=2, x_tit=f'Normalised {h.GetYaxis().GetTitle()}'.split('[')[0] if hasattr(h, 'Class') else None))
         return th if ret_h else mean_sigma(x[x != 0])
 
     def stack(self, histos, title='', leg_titles=None, scale=False, fill=None, w=.2, **dkw):
