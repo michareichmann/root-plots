@@ -1069,7 +1069,8 @@ def get_graph_x(g, err=True):
 def get_graph_y(g, err=True):
     if is_iter(g):
         return array([v for ig in g for v in get_graph_y(ig, err)])
-    return make_ufloat(frombuffer(g.GetY()), frombuffer(g.GetEY())) if err and 'Error' in g.ClassName() else frombuffer(g.GetY())
+    e = mean([frombuffer(getattr(g, f'GetEY{att}')(), count=g.GetN()) for att in ['low', 'high']], axis=0) if 'Asym' in g.ClassName() else frombuffer(g.GetEY()) if 'Error' in g.ClassName() else None
+    return make_ufloat(frombuffer(g.GetY()), e) if err and 'Error' in g.ClassName() else frombuffer(g.GetY())
 
 
 def get_hist_vec(p, err=True):
