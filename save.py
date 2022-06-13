@@ -114,12 +114,12 @@ class SaveDraw(Draw):
         self(h, **prep_kw(kwargs, show=False, save=False))
         self.save_plots(None, full_path=join(self.Dir, filename), show=False, cname=cname, **kwargs)
 
-    def histo(self, histo, file_name=None, show=True, prnt=True, save=True, info_leg=True, all_pads=False, *args, **kwargs):
+    def histo(self, histo, file_name=None, show=True, prnt=True, save=True, info_leg=True, all_pads=False, fn=None, *args, **kwargs):
         c = super(SaveDraw, self).histo(histo, show, info_leg=False, *args, **kwargs)
         if info_leg:
             self.Info.draw(c, all_pads)
         histo.SetTitle('') if not Draw.Title else do_nothing()
-        self.save_plots(file_name, prnt=prnt, show=show, save=save)
+        self.save_plots(choose(fn, file_name), prnt=prnt, show=show, save=save)
         return c
 
     def save_plots(self, savename, sub_dir=None, canvas=None, full_path=None, prnt=True, ftype=None, show=True, save=True, cname=None, **kwargs):
