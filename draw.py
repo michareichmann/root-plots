@@ -526,11 +526,11 @@ class Draw(object):
              }[m]
         return prep_kw(kwargs, **d)
 
-    def distribution(self, x, binning=None, title='', q=.02, lf=.2, rf=.2, n=1, r=None, w=None, x0=None, **kwargs):
+    def distribution(self, x, binning=None, title='', q=.02, lf=.2, rf=.2, n=1, r=None, w=None, x0=None, x1=None, **kwargs):
         if is_root_object(x):
             th = x
         else:
-            th = TH1F(Draw.get_name('h'), title, *choose(binning, find_bins, values=x, q=q, n=n, lfac=lf, rfac=rf, r=r, w=w, x0=x0))
+            th = TH1F(Draw.get_name('h'), title, *choose(binning, find_bins, values=x, q=q, n=n, lfac=lf, rfac=rf, r=r, w=w, x0=x0, x1=x1))
             fill_hist(th, x)
         format_histo(th, **prep_kw(kwargs, **Draw.mode(), fill_color=Draw.FillColor, y_tit='Number of Entries' if not th.GetYaxis().GetTitle() else None))
         self.histo(th, **prep_kw(kwargs, stats=None))
@@ -980,9 +980,9 @@ def set_2d_ranges(h, dx, dy):
     format_histo(h, x_range=[xmid - dx, xmid + dx], y_range=[ymid - dy, ymid + dx])
 
 
-def find_bins(values, lfac=.2, rfac=.2, q=.02, n=1, lq=None, w=None, x0=None, r=None):
+def find_bins(values, lfac=.2, rfac=.2, q=.02, n=1, lq=None, w=None, x0=None, x1=None, r=None):
     width, (xmin, xmax) = choose(w, bin_width(values) * n), find_range(values, lfac, rfac, q, lq) if r is None else array(r, 'd')
-    bins = arange(choose(x0, xmin), xmax + width, width)
+    bins = arange(choose(x0, xmin), choose(x1, xmax) + width, width)
     return [bins.size - 1, bins]
 
 
