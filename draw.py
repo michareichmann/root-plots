@@ -583,12 +583,12 @@ class Draw(object):
         self.histo(p, **prep_kw(dkw,  rm=.17 if 'z' in draw_opt else None, stats=choose(get_kw('stats', dkw), set_statbox, entries=True, w=.25), draw_opt=draw_opt))
         return p
 
-    def histo_2d(self, x, y=None, binning=None, title='', q=.02, qz=None, z0=None, canvas=None, rot=None, mirror=None, centre=None, **dkw):
+    def histo_2d(self, x, y=None, binning=None, title='', q=.02, n=1, qz=None, z0=None, canvas=None, rot=None, mirror=None, centre=None, **dkw):
         if y is None:
             th = x
         else:
             x, y = array(x, dtype='d'), array(y, dtype='d')
-            th = TH2F(Draw.get_name('h2'), title, *find_bins(x, q=q) + find_bins(y, q=q) if binning is None else binning)
+            th = TH2F(Draw.get_name('h2'), title, *find_bins(x, q=q, n=n) + find_bins(y, q=q, n=n) if binning is None else binning)
             fill_hist(th, x, y)
         th = self.rotate_2d(th, rot)
         th = self.flip_2d(th, mirror)
