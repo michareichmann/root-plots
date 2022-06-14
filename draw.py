@@ -555,12 +555,12 @@ class Draw(object):
         self.histo(g, show=show, bm=choose(bm, .24 if bin_labels else None), **kwargs)
         return g
 
-    def profile(self, x, y=None, binning=None, title='', q=.02, w=None, x0=None, graph=False, **dkw):
+    def profile(self, x, y=None, binning=None, title='', q=.02, lf=.2, rf=.2, w=None, x0=None, graph=False, **dkw):
         if y is None:
             p = x
         else:
             x, y = array(x, dtype='d'), array(y, dtype='d')
-            p = TProfile(Draw.get_name('p'), title, *choose(binning, find_bins, values=x, q=q, w=w, x0=x0))
+            p = TProfile(Draw.get_name('p'), title, *choose(binning, find_bins, lfac=lf, rfac=rf, values=x, q=q, w=w, x0=x0))
             fill_hist(p, x, y)
         p = self.make_graph_from_profile(p) if graph else p
         format_histo(p, **prep_kw(dkw, **Draw.mode(), fill_color=Draw.FillColor))
@@ -583,12 +583,12 @@ class Draw(object):
         self.histo(p, **prep_kw(dkw,  rm=.17 if 'z' in draw_opt else None, stats=choose(get_kw('stats', dkw), set_statbox, entries=True, w=.25), draw_opt=draw_opt))
         return p
 
-    def histo_2d(self, x, y=None, binning=None, title='', q=.02, n=1, qz=None, z0=None, canvas=None, rot=None, mirror=None, centre=None, **dkw):
+    def histo_2d(self, x, y=None, binning=None, title='', q=.02, n=1, lf=.2, rf=.2, qz=None, z0=None, canvas=None, rot=None, mirror=None, centre=None, **dkw):
         if y is None:
             th = x
         else:
             x, y = array(x, dtype='d'), array(y, dtype='d')
-            th = TH2F(Draw.get_name('h2'), title, *find_bins(x, q=q, n=n) + find_bins(y, q=q, n=n) if binning is None else binning)
+            th = TH2F(Draw.get_name('h2'), title, *sum([find_bins(i, q=q, n=n, rfac=rf, lfac=lf) for i in [x, y]], start=[]) if binning is None else binning)
             fill_hist(th, x, y)
         th = self.rotate_2d(th, rot)
         th = self.flip_2d(th, mirror)
