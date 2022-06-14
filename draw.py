@@ -354,13 +354,13 @@ class Draw(object):
         x, y = array([(x, f(x)) for x in linspace(x1, x2, n)] + [(x2, y), (x1, y)]).T
         Draw.polygon(x, y, name=name, **kwargs)
 
-    def segment(self, x, y, w, ox=0, oy=0, **dkw):
+    def segment(self, x, y, w, ox=0, oy=0, color=2, **dkw):
         x, y = x - ox, y - oy
         x, y = append(x, x[0]), append(y, y[0])
         xi, yi = [[j + (w if j == min(i) else -w) for j in i] for i in [x, y]]
-        self.graph(x, y, draw_opt='samel')
-        self.graph(xi, yi, draw_opt='samel')
-        self.graph(concatenate([x, xi]), concatenate([y, yi]), draw_opt='samef', **prep_kw(dkw, fill_style=1, fill_color=2))
+        self.graph(x, y, draw_opt='samel', **prep_kw(dkw, color=color))
+        self.graph(xi, yi, draw_opt='samel', **prep_kw(dkw, color=color))
+        return self.graph(concatenate([x, xi]), concatenate([y, yi]), draw_opt='samef', **prep_kw(dkw, fill_style=1001, fill_color=color, color=color))
 
     @staticmethod
     def tlatex(x, y, text, name=None, align=20, color=1, size=.05, angle=None, ndc=None, font=42, show=True):
