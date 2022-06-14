@@ -631,7 +631,7 @@ class Draw(object):
         self.histo(s, **prep_kw(dkw, draw_opt='nostack', leg=leg, lm=get_last_canvas().GetLeftMargin()))
         return s
 
-    def multigraph(self, graphs, title='', leg_titles=None, bin_labels=None, draw_opt='p', wleg=.2, **kwargs):
+    def multigraph(self, graphs, title='', leg_titles=None, bin_labels=None, draw_opt='p', wleg=.2, **dkw):
         if hasattr(graphs, 'GetName'):
             m, g0 = graphs, graphs.GetListOfGraphs()[0]
         else:
@@ -639,12 +639,13 @@ class Draw(object):
             m = TMultiGraph(Draw.get_name('mg'), ';'.join([title, g0.GetXaxis().GetTitle(), g0.GetYaxis().GetTitle()]))
             for i, g in enumerate(graphs):
                 m.Add(g, draw_opt)
-                format_histo(g, **prep_kw(kwargs, color=self.get_color(len(graphs)), stats=False))
+                format_histo(g, **prep_kw(dkw, color=self.get_color(len(graphs)), stats=False))
         y_range = ax_range(get_graph_y(graphs, err=False), 0, .3, .6)
-        format_histo(m, draw_first=True, **prep_kw(kwargs, **Draw.mode(1, y_off=g0.GetYaxis().GetTitleOffset()), y_range=y_range, x_tit=choose('', None, bin_labels)))
+        self.histo(m, show=False, save=False)
+        format_histo(m, **prep_kw(dkw, **Draw.mode(1, y_off=g0.GetYaxis().GetTitleOffset()), y_tit=g0.GetYaxis().GetTitle(), y_range=y_range, x_tit=choose('', None, bin_labels)))
         set_bin_labels(m, bin_labels)
         leg = self.legend(graphs, leg_titles, draw_opt, w=wleg) if leg_titles else None
-        self.histo(m, **prep_kw(kwargs, leg=leg, bm=choose(.26, None, bin_labels), draw_opt='ap'))
+        self.histo(m, **prep_kw(dkw, leg=leg, bm=choose(.26, None, bin_labels), draw_opt='ap'))
         return m
 
     def pie(self, labels, values=None, colors=None, title='', offset=0, show=True, flat=False, draw_opt=None, **kwargs):
