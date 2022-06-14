@@ -142,10 +142,11 @@ def get_kw(kw, kwargs, default=None):
     return kwargs[kw] if kw in kwargs else default
 
 
-def rm_key(d, key):
+def rm_key(d, *key):
     d = deepcopy(d)
-    if key in d:
-        del d[key]
+    for k in key:
+        if k in d:
+            del d[k]
     return d
 
 
