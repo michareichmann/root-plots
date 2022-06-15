@@ -634,7 +634,8 @@ class Draw(object):
             if scale:
                 h.Scale(1 / h.GetMaximum())
         h0 = histos[0]
-        format_histo(s, draw_first=True, x_tit=h0.GetXaxis().GetTitle(), y_tit=h0.GetYaxis().GetTitle(), **Draw.mode(1, y_off=h0.GetYaxis().GetTitleOffset()))
+        self.histo(s, show=False, save=False, draw_opt='nostack')
+        format_histo(s, **prep_kw(dkw, x_tit=h0.GetXaxis().GetTitle(), y_tit=h0.GetYaxis().GetTitle(), **Draw.mode(1, y_off=h0.GetYaxis().GetTitleOffset())))
         leg = self.legend(histos, leg_titles, 'l', w=w) if leg_titles else None
         self.histo(s, **prep_kw(dkw, draw_opt='nostack', leg=leg, lm=get_last_canvas().GetLeftMargin()))
         return s
