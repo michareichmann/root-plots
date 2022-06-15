@@ -154,7 +154,7 @@ class SaveDraw(Draw):
         Draw.set_show(True)
 
     def print_http(self, file_name, prnt=True, force_print=False):
-        info(join('https://diamond.ethz.ch', 'psi2', Path(self.ServerDir, file_name).relative_to(self.ServerMountDir)), prnt=force_print or prnt and self.Verbose and not Draw.Show)
+        info(join('https://diamond.ethz.ch', 'psi2', Path(self.ServerDir, file_name).relative_to(self.ServerMountDir)), prnt=force_print or prnt and Draw.Verbose and not Draw.Show)
 
     def save_on_server(self, canvas, file_name, save=True, prnt=True):
         if self.ServerDir is not None and save:
