@@ -9,7 +9,7 @@ from typing import Any
 
 from ROOT import TGraphErrors, TGaxis, TLatex, TGraphAsymmErrors, TCanvas, gStyle, TLegend, TArrow, TPad, TCutG, TLine, TPaveText, TPaveStats, TH1F, TEllipse, TColor, TProfile
 from ROOT import TProfile2D, TH2F, TH3F, THStack, TMultiGraph, TPie, gROOT, TF1
-from numpy import sign, linspace, ones, ceil, append, tile, absolute, rot90, flip, argsort, ndarray, arange, diff, pi, frombuffer, mean, concatenate, where, roll, indices, array_split
+from numpy import sign, linspace, ones, ceil, append, tile, absolute, rot90, flip, argsort, ndarray, arange, diff, pi, frombuffer, mean, concatenate, where, roll, indices, array_split, column_stack
 from screeninfo import get_monitors, Monitor, common
 from scipy.stats import binned_statistic
 from warnings import catch_warnings, simplefilter
@@ -1074,27 +1074,44 @@ def set_titles(status=True):
     gStyle.SetOptTitle(status)
 
 
-def get_graph_vecs(g, err=True):
-    return get_graph_x(g, err), get_graph_y(g, err)
+def get_graph_vecs(g, err=True, as_u=True):
+    return get_graph_x(g, err, as_u), get_graph_y(g, err, as_u)
 
 
-def get_graph_x(g, err=True):
-    return make_ufloat(frombuffer(g.GetX()), frombuffer(g.GetEX())) if err and 'Error' in g.ClassName() else frombuffer(g.GetX())
-
-
-def get_graph_y(g, err=True):
+def graph_vec(g, m, err=False, as_u=True):
     if is_iter(g):
-        return array([v for ig in g for v in get_graph_y(ig, err)])
-    e = mean([frombuffer(getattr(g, f'GetEY{att}')(), count=g.GetN()) for att in ['low', 'high']], axis=0) if 'Asym' in g.ClassName() else frombuffer(g.GetEY()) if 'Error' in g.ClassName() else None
-    return make_ufloat(frombuffer(g.GetY()), e) if err and 'Error' in g.ClassName() else frombuffer(g.GetY())
+        return array([v for ig in g for v in graph_vec(ig, m, err)])
+    v = frombuffer(getattr(g, f'Get{m}')())
+    if 'Asym' in g.ClassName() and err:
+        e = array([frombuffer(getattr(g, f'GetE{m}{att}')(), count=g.GetN()) for att in ['low', 'high']]).T
+        return make_ufloat(v, mean(e, axis=1)) if as_u else column_stack([v, e])
+    elif 'Error' in g.ClassName() and err:
+        e = frombuffer(getattr(g, f'GetE{m}')())
+        return make_ufloat(v, e) if as_u else array([v, e]).T
+    return v
+
+
+def get_graph_x(g, err=True, as_u=True):
+    return graph_vec(g, 'X', err, as_u)
+
+
+def get_graph_y(g, err=True, as_u=True):
+    return graph_vec(g, 'Y', err, as_u)
 
 
 def shift_graph(g, ox=0, oy=0):
     if is_iter(g):
         return [shift_graph(ig, ox, oy) for ig in g]
-    for i, (x, y) in enumerate(array(get_graph_vecs(g)).T + [ox, oy]):
-        g.SetPoint(i, x.n, y.n)
-        g.SetPointError(i, x.s, y.s)
+    if 'Asym' in g.ClassName():
+        x, y = get_graph_vecs(g, as_u=False)
+        for i in range(x.shape[0]):
+            g.SetPoint(i, x[i][0] + ox, y[i][0] + oy)
+            g.SetPointError(i, *x[i][1:], *y[i][1:])
+    else:
+        for i, (x, y) in enumerate(array(get_graph_vecs(g)).T + [ox, oy]):
+            g.SetPoint(i, x.n, y.n)
+            if 'Error' in g.ClassName():
+                g.SetPointError(i, x.s, y.s)
     return g
 
 
