@@ -1084,9 +1084,12 @@ def get_graph_y(g, err=True):
 
 
 def shift_graph(g, ox=0, oy=0):
+    if is_iter(g):
+        return [shift_graph(ig, ox, oy) for ig in g]
     for i, (x, y) in enumerate(array(get_graph_vecs(g)).T + [ox, oy]):
         g.SetPoint(i, x.n, y.n)
         g.SetPointError(i, x.s, y.s)
+    return g
 
 
 def get_hist_vec(p, err=True):
