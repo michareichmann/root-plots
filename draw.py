@@ -1083,6 +1083,12 @@ def get_graph_y(g, err=True):
     return make_ufloat(frombuffer(g.GetY()), e) if err and 'Error' in g.ClassName() else frombuffer(g.GetY())
 
 
+def shift_graph(g, ox=0, oy=0):
+    for i, (x, y) in enumerate(array(get_graph_vecs(g)).T + [ox, oy]):
+        g.SetPoint(i, x.n, y.n)
+        g.SetPointError(i, x.s, y.s)
+
+
 def get_hist_vec(p, err=True):
     return array([ufloat(p.GetBinContent(ibin), p.GetBinError(ibin)) if err else p.GetBinContent(ibin) for ibin in range(1, p.GetNbinsX() + 1)])
 
