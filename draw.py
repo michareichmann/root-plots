@@ -9,7 +9,7 @@ from typing import Any
 
 from ROOT import TGraphErrors, TGaxis, TLatex, TGraphAsymmErrors, TCanvas, gStyle, TLegend, TArrow, TPad, TCutG, TLine, TPaveText, TPaveStats, TH1F, TEllipse, TColor, TProfile
 from ROOT import TProfile2D, TH2F, TH3F, THStack, TMultiGraph, TPie, gROOT, TF1
-from numpy import sign, linspace, ones, ceil, append, tile, absolute, rot90, flip, argsort, ndarray, arange, diff, pi, frombuffer, mean, concatenate, where, roll, indices
+from numpy import sign, linspace, ones, ceil, append, tile, absolute, rot90, flip, argsort, ndarray, arange, diff, pi, frombuffer, mean, concatenate, where, roll, indices, array_split
 from screeninfo import get_monitors, Monitor, common
 from scipy.stats import binned_statistic
 from warnings import catch_warnings, simplefilter
@@ -556,12 +556,18 @@ class Draw(object):
         [self(i, draw_opt='same', **prep_kw(dkw, color=self.get_color(len(f)))) for i in f[1:]]
         return get_last_canvas()
 
-    def graph(self, x, y=None, title='', bm=None, show=True, bin_labels=None, **kwargs):
+    def graph(self, x, y=None, title='', bin_labels=None, **dkw):
         g = x if y is None else Draw.make_tgrapherrors(x, y)
-        format_histo(g, title=title, **prep_kw(kwargs, **Draw.mode(), fill_color=Draw.FillColor))
+        format_histo(g, title=title, **prep_kw(dkw, **Draw.mode(), fill_color=Draw.FillColor))
         set_bin_labels(g, bin_labels)
-        self.histo(g, show=show, bm=choose(bm, .24 if bin_labels else None), **kwargs)
+        self.histo(g, **prep_kw(dkw, bm=.24 if bin_labels else None))
         return g
+
+    def trend(self, x, y, title='', bw=None, n=20, **dkw):
+        x, y = [array_split(i, n if bw is None else arange(bw, x.size, bw)) for i in [x, y]]
+        x = abs(array([mean(i) + array([0, -i[0], -i[-1]]) for i in x]))
+        y = [mean_sigma(i)[0] for i in y]
+        return self.graph(x, y, title, **dkw)
 
     def profile(self, x, y=None, binning=None, title='', q=.02, lf=.2, rf=.2, w=None, x0=None, graph=False, **dkw):
         if y is None:
