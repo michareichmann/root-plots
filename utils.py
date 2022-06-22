@@ -164,7 +164,7 @@ def mean_sigma(values, weights=None, err=True):
         return [0, 0]
     n, avrg = values.size, average(values, weights=weights)
     sigma = sqrt(n / (n - 1) * average((values - avrg) ** 2, weights=weights))  # Fast and numerically precise
-    m = ufloat(avrg, sqrt(1 / sum(weights)))
+    m = ufloat(avrg, sqrt(1 / sum(weights)))  # https://en.wikipedia.org/wiki/Inverse-variance_weighting
     s = ufloat(sigma, sigma / sqrt(2 * len(values)))
     return (m, s) if err else (m.n, s.n)
 
