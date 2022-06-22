@@ -158,13 +158,14 @@ def mean_sigma(values, weights=None, err=True):
     weights = full(len(values), 1) if weights is None else weights
     if is_ufloat(values[0]):
         errors = array([v.s for v in values])
-        weights = full(errors.size, 1) if all(errors == errors[0]) else [1 / e if e else 0 for e in errors]
+        weights = full(errors.size, 1) if all(errors == errors[0]) else [1 / e ** 2 if e else 0 for e in errors]
         values = array([v.n for v in values], 'd')
     if all(weights == 0):
         return [0, 0]
     n, avrg = values.size, average(values, weights=weights)
     sigma = sqrt(n / (n - 1) * average((values - avrg) ** 2, weights=weights))  # Fast and numerically precise
-    m, s = ufloat(avrg, sigma / (sqrt(len(values)) - 1)), ufloat(sigma, sigma / sqrt(2 * len(values)))
+    m = ufloat(avrg, sqrt(1 / sum(weights)))
+    s = ufloat(sigma, sigma / sqrt(2 * len(values)))
     return (m, s) if err else (m.n, s.n)
 
 
