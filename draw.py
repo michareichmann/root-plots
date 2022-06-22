@@ -500,7 +500,7 @@ class Draw(object):
 
     @staticmethod
     def histo(th, show=True, lm=None, rm=None, bm=None, tm=None, m=None, draw_opt=None, w=1, h=1, logx=None, logy=None, logz=None, grid=None, gridy=None, gridx=None, phi=None, theta=None,
-              leg=None, canvas=None, sumw2=None, stats=False, all_pads=False, info_leg=True, **kwargs):
+              leg=None, ldraw=None, canvas=None, sumw2=None, stats=False, all_pads=False, info_leg=True, **kwargs):
         w += .16 if not Draw.Title and w == 1 else 0  # rectify if there is no title
         th.Sumw2(sumw2) if hasattr(th, 'Sumw2') and sumw2 is not None else do_nothing()
         Draw.set_show(show)
@@ -514,7 +514,7 @@ class Draw(object):
         if leg is not None:
             update_canvas()
             for i_leg in make_list(leg):
-                i_leg.Draw('same')
+                i_leg.Draw(choose(ldraw, 'same'))
                 th.GetListOfFunctions().Add(i_leg) if hasattr(th, 'GetListOfFunctions') else do_nothing()
         if info_leg:
             Draw.Info.draw(c, all_pads)
