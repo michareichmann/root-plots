@@ -4,7 +4,7 @@
 # created on September 25th 2020 by M. Reichmann (remichae@phys.ethz.ch)
 # --------------------------------------------------------
 
-from os.path import expanduser, basename, isdir
+from os.path import basename, isdir
 from ROOT import TFile
 
 from . import html
@@ -29,13 +29,14 @@ class SaveDraw(Draw):
         SaveDraw.Save = Draw.Config.get_value('SAVE', 'save', default=False)
 
         # Results
-        self.ResultsDir = join(BaseDir, 'Results', choose(results_dir, default='' if analysis is None else analysis.TCString))
+        self.ResultsDir = BaseDir.joinpath('Results', choose(results_dir, default='' if analysis is None else analysis.TCString))
         self.SubDir = str(sub_dir)
 
         # Server
-        SaveDraw.ServerMountDir = expanduser(Draw.Config.get_value('SAVE', 'server mount directory', default=None))
+        SaveDraw.ServerMountDir = Path(Draw.Config.get_value('SAVE', 'server mount directory', default=None)).expanduser()
         SaveDraw.server_is_mounted(analysis)
         self.ServerDir = self.load_server_save_dir()
+        self.FileName = self.ServerDir.joinpath('plots.root') if self.ServerDir else None
 
     def __del__(self):
         remove_file(join(self.Dir, 'dummy.root'), prnt=False)
@@ -45,15 +46,13 @@ class SaveDraw(Draw):
     def load_server_save_dir(self):
         if self.Analysis is not None and SaveDraw.MountExists and SaveDraw.ServerMountDir is not None:
             if hasattr(self.Analysis, 'load_selections'):
-                ensure_dir(join(SaveDraw.ServerMountDir, 'content', 'selections', str(self.Analysis)))
-                return join(SaveDraw.ServerMountDir, 'content', 'selections', str(self.Analysis))
+                return ensure_dir(SaveDraw.ServerMountDir.joinpath('content', 'selections', str(self.Analysis)))
             elif hasattr(self.Analysis, 'Ensemble') and 'RS' in str(self.Analysis.Ensemble):
-                ensure_dir(join(SaveDraw.ServerMountDir, 'content', self.SubDir))
-                return join(SaveDraw.ServerMountDir, 'content', self.SubDir)
+                return ensure_dir(SaveDraw.ServerMountDir.joinpath('content', self.SubDir))
             if not hasattr(self.Analysis, 'DUT'):
                 return
             run_string = f'RP-{self.Analysis.Ensemble.Name.lstrip("0").replace(".", "-")}' if hasattr(self.Analysis, 'RunPlan') else str(self.Analysis.Run.Number)
-            return join(SaveDraw.ServerMountDir, 'content', 'diamonds', self.Analysis.DUT.Name, self.Analysis.TCString, run_string)
+            return SaveDraw.ServerMountDir.joinpath('content', 'diamonds', self.Analysis.DUT.Name, self.Analysis.TCString, run_string)
 
     def init_info(self):
         return super().init_info() if self.Analysis is None else self.Analysis.InfoLegend(self)
@@ -65,9 +64,9 @@ class SaveDraw(Draw):
     def open_file(self, *exclude, prnt=False):
         if SaveDraw.File is None or exclude:
             info('opening ROOT file on server ...', prnt=prnt)
-            f = TFile(join(self.ServerDir, 'plots.root'), 'UPDATE')
+            f = TFile(self.FileName, 'UPDATE')
             data = {key.GetName(): f.Get(key.GetName()) for key in f.GetListOfKeys()}
-            f = TFile(join(self.ServerDir, 'plots.root'), 'RECREATE')
+            f = TFile(self.FileName, 'RECREATE')
             for key, c in data.items():
                 if c and key not in exclude:
                     c.Write(key)
@@ -80,15 +79,17 @@ class SaveDraw(Draw):
             SaveDraw.File.Close()
             SaveDraw.File = None
 
+    def rm_plots(self):
+        remove_file(self.FileName)
+
     def remove_plots(self, *exclude):
         self.open_file(*exclude, prnt=False)
 
     def create_overview(self, x=4, y=3, redo=True):
         if self.ServerDir is not None:
-            p = Path(self.ServerDir, 'plots.root')
-            html.create_tree(p.with_name('tree.html'))
-            if not p.with_suffix('.html').exists() or redo:
-                html.create_root_overview(p, x, y, verbose=self.Verbose)
+            html.create_tree(self.FileName.with_name('tree.html'))
+            if not self.FileName.with_suffix('.html').exists() or redo:
+                html.create_root_overview(self.FileName, x, y, verbose=self.Verbose)
 
     def set_sub_dir(self, name):
         self.SubDir = name
@@ -123,7 +124,7 @@ class SaveDraw(Draw):
         return c
 
     def save_plots(self, savename, sub_dir=None, canvas=None, full_path=None, prnt=True, ftype=None, show=True, save=True, cname=None, **kwargs):
-        """ Saves the canvas at the desired location. If no canvas is passed as argument, the active canvas will be saved. However for applications without graphical interface,
+        """ Saves the canvas at the desired location. If no canvas is passed as argument, the active canvas will be saved. However, for applications without graphical interface,
          such as in SSl terminals, it is recommended to pass the canvas to the method. """
         kwargs = prep_kw(kwargs, save=save, prnt=prnt, show=show)
         if not kwargs['save'] or not SaveDraw.Save or (savename is None and full_path is None):

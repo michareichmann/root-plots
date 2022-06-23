@@ -15,7 +15,8 @@ from numpy import array, zeros, count_nonzero, sqrt, average, full, all, quantil
 from uncertainties import ufloat_fromstr, ufloat
 from uncertainties.core import Variable, AffineScalarFunc
 
-BaseDir = dirname(dirname(realpath(__file__)))
+BaseDir = Path(__file__).resolve().parent.parent
+
 
 ON = True
 OFF = False
