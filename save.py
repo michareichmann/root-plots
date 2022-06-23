@@ -19,7 +19,7 @@ class SaveDraw(Draw):
     ServerMountDir = None
     MountExists = None
     File = None
-    Dummy = TFile(join(Draw.Dir, 'dummy.root'), 'RECREATE')
+    Dummy = TFile(str(Draw.Dir.joinpath('dummy.root')), 'RECREATE')
 
     def __init__(self, analysis=None, results_dir=None, sub_dir=''):
         self.Analysis = analysis
@@ -36,7 +36,6 @@ class SaveDraw(Draw):
         SaveDraw.ServerMountDir = Path(Draw.Config.get_value('SAVE', 'server mount directory', default=None)).expanduser()
         SaveDraw.server_is_mounted(analysis)
         self.ServerDir = self.load_server_save_dir()
-        self.FileName = self.ServerDir.joinpath('plots.root') if self.ServerDir else None
 
     def __del__(self):
         remove_file(join(self.Dir, 'dummy.root'), prnt=False)
@@ -56,6 +55,10 @@ class SaveDraw(Draw):
 
     def init_info(self):
         return super().init_info() if self.Analysis is None else self.Analysis.InfoLegend(self)
+
+    @property
+    def file_name(self):
+        return None if self.ServerDir is None else self.ServerDir.joinpath('plots.root')
     # endregion INIT
     # ----------------------------------------
 
@@ -64,9 +67,9 @@ class SaveDraw(Draw):
     def open_file(self, *exclude, prnt=False):
         if SaveDraw.File is None or exclude:
             info('opening ROOT file on server ...', prnt=prnt)
-            f = TFile(self.FileName, 'UPDATE')
+            f = TFile(str(self.file_name), 'UPDATE')
             data = {key.GetName(): f.Get(key.GetName()) for key in f.GetListOfKeys()}
-            f = TFile(self.FileName, 'RECREATE')
+            f = TFile(str(self.file_name), 'RECREATE')
             for key, c in data.items():
                 if c and key not in exclude:
                     c.Write(key)
@@ -80,16 +83,16 @@ class SaveDraw(Draw):
             SaveDraw.File = None
 
     def rm_plots(self):
-        remove_file(self.FileName)
+        remove_file(self.file_name)
 
     def remove_plots(self, *exclude):
         self.open_file(*exclude, prnt=False)
 
     def create_overview(self, x=4, y=3, redo=True):
         if self.ServerDir is not None:
-            html.create_tree(self.FileName.with_name('tree.html'))
-            if not self.FileName.with_suffix('.html').exists() or redo:
-                html.create_root_overview(self.FileName, x, y, verbose=self.Verbose)
+            html.create_tree(self.file_name.with_name('tree.html'))
+            if not self.file_name.with_suffix('.html').exists() or redo:
+                html.create_root_overview(self.file_name, x, y, verbose=self.Verbose)
 
     def set_sub_dir(self, name):
         self.SubDir = name
@@ -142,16 +145,15 @@ class SaveDraw(Draw):
     def __save_canvas(self, canvas, file_name, res_dir=None, sub_dir=None, full_path=None, ftype=None, prnt=True, show=True, **kwargs):
         """should not be used in analysis methods..."""
         _ = kwargs
-        file_path = join(choose(res_dir, self.ResultsDir), choose(sub_dir, self.SubDir), file_name) if full_path is None else full_path
-        file_name = basename(file_path)
-        ensure_dir(dirname(file_path))
-        info(f'saving plot: {file_name}', prnt=prnt and self.Verbose)
+        file_path = Path(join(choose(res_dir, self.ResultsDir), choose(sub_dir, self.SubDir), file_name) if full_path is None else full_path)
+        ensure_dir(file_path.parent)
+        info(f'saving plot: {file_path.name}', prnt=prnt and self.Verbose)
         canvas.Update()
         Draw.set_show(show)  # needs to be in the same batch so that the pictures are created, takes forever...
         set_root_warnings(False)
         for f in choose(make_list(ftype), default=['pdf'], decider=ftype):
-            canvas.SaveAs('{}.{}'.format(file_path, f.strip('.')))
-        self.save_on_server(canvas, file_name, save=full_path is None, prnt=prnt)
+            canvas.SaveAs(f'{file_path}.{f.strip(".")}')
+        self.save_on_server(canvas, file_path.name, save=full_path is None, prnt=prnt)
         Draw.set_show(True)
 
     def print_http(self, file_name, prnt=True, force_print=False):

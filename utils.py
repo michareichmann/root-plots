@@ -7,7 +7,7 @@ from copy import deepcopy
 from datetime import datetime
 from json import loads, load
 from os import _exit, makedirs, remove
-from os.path import dirname, realpath, exists, isfile, join
+from os.path import exists, isfile, join
 from time import time
 from pathlib import Path
 

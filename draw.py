@@ -99,7 +99,7 @@ def get_color_gradient():
 
 class Draw(object):
 
-    Dir = dirname(realpath(__file__))
+    Dir = Path(__file__).resolve().parent
     Verbose = False
     Config = None
     Monitor = None
