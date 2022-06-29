@@ -44,7 +44,7 @@ class SaveDraw(Draw):
     # region INIT
     def load_server_save_dir(self):
         if self.Analysis is not None and SaveDraw.MountExists and SaveDraw.ServerMountDir is not None:
-            if hasattr(self.Analysis, 'load_selections'):
+            if hasattr(self.Analysis, 'Selections'):
                 return ensure_dir(SaveDraw.ServerMountDir.joinpath('content', 'selections', str(self.Analysis)))
             elif hasattr(self.Analysis, 'Ensemble') and 'RS' in str(self.Analysis.Ensemble):
                 return ensure_dir(SaveDraw.ServerMountDir.joinpath('content', self.SubDir))
