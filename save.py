@@ -18,12 +18,13 @@ class SaveDraw(Draw):
 
     ServerMountDir = None
     MountExists = None
-    File = None
     Dummy = TFile(str(Draw.Dir.joinpath('dummy.root')), 'RECREATE')
 
     def __init__(self, analysis=None, results_dir=None, sub_dir=''):
         self.Analysis = analysis
         super(SaveDraw, self).__init__(None if analysis is None else analysis.MainConfig.FilePath)
+
+        self.File = None
 
         # INFO
         SaveDraw.Save = Draw.Config.get_value('SAVE', 'save', default=False)
@@ -65,7 +66,7 @@ class SaveDraw(Draw):
     # ----------------------------------------
     # region SET
     def open_file(self, *exclude, prnt=False):
-        if SaveDraw.File is None or exclude:
+        if self.File is None or exclude:
             info('opening ROOT file on server ...', prnt=prnt)
             f = TFile(str(self.file_name), 'UPDATE')
             data = {key.GetName(): f.Get(key.GetName()) for key in f.GetListOfKeys()}
@@ -74,13 +75,12 @@ class SaveDraw(Draw):
                 if c and key not in exclude:
                     c.Write(key)
             f.Write()
-            SaveDraw.File = f
+            self.File = f
 
-    @staticmethod
-    def close_file():
-        if SaveDraw.File is not None:
-            SaveDraw.File.Close()
-            SaveDraw.File = None
+    def close_file(self):
+        if self.File is not None:
+            self.File.Close()
+            self.File = None
 
     def rm_plots(self):
         remove_file(self.file_name)
@@ -163,13 +163,13 @@ class SaveDraw(Draw):
         if self.ServerDir is not None and save:
             self.open_file()
             p = Path(self.ServerDir, f'{basename(file_name)}.html')
-            if file_name in SaveDraw.File.GetListOfKeys():
-                SaveDraw.File.Delete(f'{file_name};1')
+            if file_name in self.File.GetListOfKeys():
+                self.File.Delete(f'{file_name};1')
             else:
                 html.create_root(p, title=p.parent.name, pal=53 if 'SignalMap' in file_name else 55, verbose=self.Verbose)
-            SaveDraw.File.cd()
+            self.File.cd()
             canvas.Write(file_name)
-            SaveDraw.File.Write()
+            self.File.Write()
             SaveDraw.Dummy.cd()
             self.print_http(p.name, prnt)
             self.create_overview(redo=False)
