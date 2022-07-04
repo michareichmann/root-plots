@@ -114,6 +114,7 @@ class Draw(object):
     Info = None
     FillColor = 871
     Font = 42
+    Solid = 1001
 
     DefaultStats = {'x2': None, 'y2': None, 'h': None, 'w': .3, 'entries': False, 'm': False, 'rms': False, 'all_stat': True, 'fit': False, 'center_x': False, 'center_y': False, 'form': None}
     Stats = {}
@@ -360,7 +361,7 @@ class Draw(object):
         xi, yi = [[j + (w if j == min(i) else -w) for j in i] for i in [x, y]]
         self.graph(x, y, draw_opt='samel', **prep_kw(dkw, color=color))
         self.graph(xi, yi, draw_opt='samel', **prep_kw(dkw, color=color))
-        return self.graph(concatenate([x, xi]), concatenate([y, yi]), draw_opt='samef', **prep_kw(dkw, fill_style=1001, fill_color=color, color=color))
+        return self.graph(concatenate([x, xi]), concatenate([y, yi]), draw_opt='samef', **prep_kw(dkw, fill_style=Draw.Solid, fill_color=color, color=color))
 
     @staticmethod
     def tlatex(x, y, text, name=None, align=20, color=1, size=.05, angle=None, ndc=None, font=42, show=True):
@@ -424,7 +425,7 @@ class Draw(object):
         p = TPaveStats(*get_stat_pos(c, fit.NPar - make_list(rm_entries).size + 1, x2, y2, w=w), 'ndc')
         p.SetBorderSize(1)
         p.SetFillColor(0)
-        p.SetFillStyle(1001)
+        p.SetFillStyle(Draw.Solid)
         leg = p.AddText('Fit Result')
         leg.SetTextFont(42)
         ls = p.GetListOfLines()
@@ -469,7 +470,7 @@ class Draw(object):
         do(e.SetLineColor, color)
         do(e.SetFillColor, choose(fill_color, color))
         do(e.SetLineWidth, w)
-        e.SetFillStyle(1001 if fill else 0)
+        e.SetFillStyle(Draw.Solid if fill else 0)
         e.Draw() if show else do_nothing()
         return Draw.add(e)
 
@@ -636,7 +637,7 @@ class Draw(object):
         for h in histos:
             s.Add(h, 'hist')
             color = self.get_color(len(histos))
-            format_histo(h, color=color, fill_color=choose(color, 0, fill), fill_style=choose(1001, 4000, fill), stats=0, **dkw)
+            format_histo(h, color=color, fill_color=choose(color, 0, fill), fill_style=choose(Draw.Solid, 4000, fill), stats=0, **dkw)
             if scale:
                 h.Scale(1 / h.GetMaximum())
         h0 = histos[0]
@@ -1257,7 +1258,7 @@ def show_colors(colors):
     c = Draw.canvas(divide=(int(ceil(sqrt(n))), int(ceil(sqrt(n)))))
     for i, col in enumerate(colors, 1):
         c.cd(i)
-        Draw.box(0, 0, 1, 1, fillstyle=1001, fillcolor=col)
+        Draw.box(0, 0, 1, 1, fillstyle=Draw.Solid, fillcolor=col)
         Draw.tlatex(.5, .5, str(i - 1), align=22, size=.2)
 
 
