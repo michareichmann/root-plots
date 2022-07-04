@@ -424,7 +424,7 @@ class Draw(object):
         p = TPaveStats(*get_stat_pos(c, fit.NPar - make_list(rm_entries).size + 1, x2, y2, w=w), 'ndc')
         p.SetBorderSize(1)
         p.SetFillColor(0)
-        p.SetFillStyle(0)
+        p.SetFillStyle(1001)
         leg = p.AddText('Fit Result')
         leg.SetTextFont(42)
         ls = p.GetListOfLines()
