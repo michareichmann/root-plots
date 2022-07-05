@@ -1,4 +1,4 @@
-from numpy import array
+from numpy import array, column_stack
 
 
 def f(name, *args):
@@ -54,9 +54,9 @@ def table_row(*words, endl=False):
     return hline(row) if endl or 'hline' in row else f'{row} \\\\'
 
 
-def table(header, rows, endl=False):
+def table(header, rows, endl=False, align_header=False):
     cols = array(rows, str).T
-    max_width = [len(max(col, key=len).replace(' \\\\\\hline', '')) for col in cols]  # noqa
+    max_width = [len(max(col, key=len).replace(' \\\\\\hline', '')) for col in (column_stack([cols, header]) if align_header else cols)]  # noqa
     rows = array([[f'{word:<{w}}' for word in col] for col, w in zip(cols, max_width)]).T
     rows = '\n'.join(table_row(*row, endl=endl) for row in rows)
     return f'{table_row(*header, endl=True)}\n{rows}' if header else rows
