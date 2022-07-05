@@ -10,6 +10,7 @@ from ROOT import TFile
 from . import html
 from .draw import *
 from .utils import BaseDir
+from time import sleep
 
 
 class SaveDraw(Draw):
@@ -70,6 +71,9 @@ class SaveDraw(Draw):
             info('opening ROOT file on server ...', prnt=prnt)
             f = TFile(str(self.file_name), 'UPDATE')
             data = {key.GetName(): f.Get(key.GetName()) for key in f.GetListOfKeys()}
+            if not data:
+                self.rm_plots()
+                sleep(.1)
             f = TFile(str(self.file_name), 'RECREATE')
             for key, c in data.items():
                 if c and key not in exclude:
