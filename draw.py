@@ -545,9 +545,11 @@ class Draw(object):
         self.histo(th, **prep_kw(kwargs, stats=None))
         return th
 
-    def function(self, f, title='', c=None, **dkw):
+    def function(self, f, title='', c=None, graph=False, **dkw):
+        x = linspace(f.GetXmin(), f.GetXmax(), 100)
+        f = Draw.make_tgrapherrors(x, [f(i) for i in x]) if graph else f
         format_histo(f, title=title, **prep_kw(dkw, **Draw.mode()))
-        self.histo(f, **prep_kw(dkw, canvas=c))
+        self.histo(f, **prep_kw(dkw, canvas=c, line_color=2, draw_opt='al' if graph else None))
         return f
 
     def functions(self, f, leg_titles=None, wl=.2, **dkw):
