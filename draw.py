@@ -547,7 +547,7 @@ class Draw(object):
 
     def function(self, f, title='', c=None, graph=False, **dkw):
         x = linspace(f.GetXmin(), f.GetXmax(), 100)
-        f = Draw.make_tgrapherrors(x, [f(i) for i in x]) if graph else f
+        f = Draw.make_tgraph(x, [f(i) for i in x]) if graph else f
         format_histo(f, title=title, **prep_kw(dkw, **Draw.mode()))
         self.histo(f, **prep_kw(dkw, canvas=c, line_color=2, draw_opt='al' if graph else None))
         return f
@@ -560,7 +560,7 @@ class Draw(object):
         return get_last_canvas()
 
     def graph(self, x, y=None, title='', bin_labels=None, **dkw):
-        g = x if y is None else Draw.make_tgrapherrors(x, y)
+        g = x if y is None else Draw.make_tgraph(x, y)
         format_histo(g, title=title, **prep_kw(dkw, **Draw.mode(), fill_color=Draw.FillColor))
         set_bin_labels(g, bin_labels)
         self.histo(g, **prep_kw(dkw, bm=.24 if bin_labels else None))
@@ -757,7 +757,7 @@ class Draw(object):
         return Draw.add(f0)
 
     @staticmethod
-    def make_tgrapherrors(x=None, y=None, **kwargs):
+    def make_tgraph(x=None, y=None, **kwargs):
         if len(list(x)) != len(list(y)) or not len(x):
             return warning('Arrays have different size!')
         x, y = array(x), array(y)
@@ -774,7 +774,7 @@ class Draw(object):
     def make_graph_from_profile(p, nmin=2):
         (x, y), n = get_hist_vecs(p), get_bin_entries(p)
         cut = (y != 0) & (n >= nmin)
-        return Draw.make_tgrapherrors(x[cut], y[cut], title=p.GetTitle(), x_tit=p.GetXaxis().GetTitle(), y_tit=p.GetYaxis().GetTitle())
+        return Draw.make_tgraph(x[cut], y[cut], title=p.GetTitle(), x_tit=p.GetXaxis().GetTitle(), y_tit=p.GetYaxis().GetTitle())
 
     @staticmethod
     def make_legend(x2=None, y2=None, w=.25, nentries=2, scale=1, ts=None, d=.01, y1=None, x1=None, clean=False, margin=.25, cols=None, fix=False, bottom=False, left=False, c=None, **kwargs):
