@@ -69,11 +69,13 @@ class SaveDraw(Draw):
     def open_file(self, *exclude, prnt=False):
         if self.File is None or exclude:
             info('opening ROOT file on server ...', prnt=prnt)
-            f = TFile(str(self.file_name), 'UPDATE')
-            data = {key.GetName(): f.Get(key.GetName()) for key in f.GetListOfKeys()}
-            if not data:
-                self.rm_plots()
-                sleep(.1)
+            data = {}
+            if self.file_name.exists():
+                f = TFile(str(self.file_name), 'UPDATE')
+                data = {key.GetName(): f.Get(key.GetName()) for key in f.GetListOfKeys()}
+                if not data:
+                    self.rm_plots()
+                    sleep(.1)
             f = TFile(str(self.file_name), 'RECREATE')
             for key, c in data.items():
                 if c and key not in exclude:
