@@ -420,21 +420,22 @@ class Draw(object):
 
     @staticmethod
     def stats(fit, x2=None, y2=None, w=.3, prec='1.1f', names=None, rm_entries=None):
-        names = fit.Names if names is None else names
-        c = get_last_canvas()
-        p = TPaveStats(*get_stat_pos(c, fit.NPar - make_list(rm_entries).size + 1, x2, y2, w=w), 'ndc')
-        p.SetBorderSize(1)
-        p.SetFillColor(0)
-        p.SetFillStyle(Draw.Solid)
-        leg = p.AddText('Fit Result')
-        leg.SetTextFont(42)
-        ls = p.GetListOfLines()
-        ls.Add(Draw.tlatex(0, 0, '#chi^{{2}} / ndf  = {chi2:{p}} / {ndf}'.format(ndf=fit.Ndf(), chi2=fit.Chi2(), p=prec), size=0, align=0, font=42))
-        for i in range(fit.NPar):
-            if i not in make_list(rm_entries):
-                ls.Add(Draw.tlatex(0, 0, '{n}  = {v:{p}} #pm {e:{p}}'.format(n=names[i], v=fit.Parameter(i), e=fit.ParError(i), p=prec), size=0, align=0, font=42))
-        p.Draw()
-        return Draw.add(p)
+        if fit is not None:
+            names = fit.Names if names is None else names
+            c = get_last_canvas()
+            p = TPaveStats(*get_stat_pos(c, fit.NPar - make_list(rm_entries).size + 1, x2, y2, w=w), 'ndc')
+            p.SetBorderSize(1)
+            p.SetFillColor(0)
+            p.SetFillStyle(Draw.Solid)
+            leg = p.AddText('Fit Result')
+            leg.SetTextFont(42)
+            ls = p.GetListOfLines()
+            ls.Add(Draw.tlatex(0, 0, '#chi^{{2}} / ndf  = {chi2:{p}} / {ndf}'.format(ndf=fit.Ndf(), chi2=fit.Chi2(), p=prec), size=0, align=0, font=42))
+            for i in range(fit.NPar):
+                if i not in make_list(rm_entries):
+                    ls.Add(Draw.tlatex(0, 0, '{n}  = {v:{p}} #pm {e:{p}}'.format(n=names[i], v=fit.Parameter(i), e=fit.ParError(i), p=prec), size=0, align=0, font=42))
+            p.Draw()
+            return Draw.add(p)
 
     @staticmethod
     def add_stats_entry(h, key, value, form='.2f', line=None):
