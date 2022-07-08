@@ -156,6 +156,18 @@ class Draw(object):
     def __repr__(self):
         return f'ROOT {self.__class__.__name__} instance: Title = {get_stat(Draw.Title)}, Show = {get_stat(Draw.Show)}, Info = {get_stat(self.Info)}'
 
+    @property
+    def activate(self):
+        Draw.Show = True
+        return True
+    a = activate
+
+    @property
+    def deactivate(self):
+        Draw.Show = False
+        return False
+    d = deactivate
+
     # ----------------------------------------
     # region INIT
     @staticmethod
