@@ -10,7 +10,6 @@ from ROOT import TFile
 from . import html
 from .draw import *
 from .utils import BaseDir
-from time import sleep
 
 
 class SaveDraw(Draw):
@@ -71,11 +70,10 @@ class SaveDraw(Draw):
             info('opening ROOT file on server ...', prnt=prnt)
             data = {}
             if self.file_name.exists():
-                f = TFile(str(self.file_name), 'UPDATE')
-                data = {key.GetName(): f.Get(key.GetName()) for key in f.GetListOfKeys()}
-                if not data:
+                if self.file_name.stat().st_size < 1000:   # file must be corrupted or empty
                     self.rm_plots()
-                    sleep(.1)
+                f0 = TFile(str(self.file_name), 'UPDATE')
+                data = {key.GetName(): f0.Get(key.GetName()) for key in f0.GetListOfKeys()}
             f = TFile(str(self.file_name), 'RECREATE')
             for key, c in data.items():
                 if c and key not in exclude:
@@ -179,6 +177,7 @@ class SaveDraw(Draw):
             SaveDraw.Dummy.cd()
             self.print_http(p.name, prnt)
             self.create_overview(redo=False)
+            self.close_file()
 
     @staticmethod
     def save_last(canvas=None, ext='pdf', verbose=None):
