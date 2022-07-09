@@ -431,11 +431,11 @@ class Draw(object):
         return t
 
     @staticmethod
-    def stats(fit, x2=None, y2=None, w=.3, prec='1.1f', names=None, rm_entries=None):
+    def stats(fit, x2=None, y2=None, w=.3, prec='1.1f', names=None, rm_entries=None, left=False, **_kw):
         if fit is not None:
             names = fit.Names if names is None else names
             c = get_last_canvas()
-            p = TPaveStats(*get_stat_pos(c, fit.NPar - make_list(rm_entries).size + 1, x2, y2, w=w), 'ndc')
+            p = TPaveStats(*get_stat_pos(c, fit.NPar - make_list(rm_entries).size + 1, x2, y2, w=w, left=left), 'ndc')
             p.SetBorderSize(1)
             p.SetFillColor(0)
             p.SetFillStyle(Draw.Solid)
