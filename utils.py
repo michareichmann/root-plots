@@ -368,9 +368,11 @@ class AsymVar:
     def __getitem__(self, item):
         return [self.NominalValue, self.ErrUp, self.ErrDown][item]
 
+    def __format__(self, f):
+        return f'{self.n:{f}}+{self.s0:{f}}-{self.s1:{f}}'
+
     def format(self, fmt=None, unit=''):
-        f = choose(fmt, self.Format)
-        return f'({self.n:{f}}+{self.s0:{f}}-{self.s1:{f}}){unit}'
+        return f'({self.__format__(choose(fmt, self.Format))}){unit}'
 
     @property
     def to_ufloat(self):
