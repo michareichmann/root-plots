@@ -524,6 +524,7 @@ class Draw(object):
         do([c.SetLogx, c.SetLogy, c.SetLogz], [logx, logy, logz])
         do([c.SetGridx, c.SetGridy], [gridx or grid, gridy or grid])
         do([c.SetPhi, c.SetTheta], [phi, theta])
+        c.cd()
         th.Draw(draw_opt if draw_opt is not None else 'ap' if is_graph(th) else 'hist' if 'TH' in th.ClassName() else '')
         if leg is not None:
             update_canvas()
@@ -670,9 +671,10 @@ class Draw(object):
             m = TMultiGraph(Draw.get_name('mg'), ';'.join([title, g0.GetXaxis().GetTitle(), g0.GetYaxis().GetTitle()]))
             for i, g in enumerate(graphs):
                 m.Add(g, draw_opt)
-                format_histo(g, **prep_kw(dkw, color=self.get_color(len(graphs)), stats=False))
+                color = None if get_kw('color', dkw, 2) is None else self.get_color(len(graphs))
+                format_histo(g, **prep_kw(dkw, color=color, stats=False))
         y_range = ax_range(get_graph_y(graphs, err=False), 0, .3, .6)
-        self.histo(m, show=False, save=False)
+        self.histo(m, show=False, save=False, canvas=get_kw('canvas', dkw, None))
         format_histo(m, **prep_kw(dkw, **Draw.mode(1, y_off=g0.GetYaxis().GetTitleOffset()), y_tit=g0.GetYaxis().GetTitle(), y_range=y_range, x_tit=choose('', None, bin_labels)))
         set_bin_labels(m, bin_labels)
         leg = self.legend(graphs, leg_titles, draw_opt, w=wleg) if leg_titles else None
@@ -1244,8 +1246,14 @@ def get_quantile(h, q):
     return v[0] if v.size == 1 else v
 
 
-def markers(i):
-    return ((list(range(20, 24)) + [29, 33, 34]) * 2)[i]
+def markers(i, duo=False):
+    return duo_markers(i) if duo else ((list(range(20, 24)) + [29, 33, 34]) * 2)[i]
+
+
+def duo_markers(i):
+    """ :returns full and open marker"""
+    full_, open_ = [20, 21, 22, 23, 29, 33, 34], [24, 25, 26, 32, 30, 27, 28]
+    return list(concatenate(array([full_, open_]).T).tolist())[i]
 
 
 def set_palette(*pal):
