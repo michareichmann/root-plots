@@ -9,7 +9,7 @@ from typing import Any
 
 from ROOT import TGraphErrors, TGaxis, TLatex, TGraphAsymmErrors, TCanvas, gStyle, TLegend, TArrow, TPad, TCutG, TLine, TPaveText, TPaveStats, TH1F, TEllipse, TColor, TProfile
 from ROOT import TProfile2D, TH2F, TH3F, THStack, TMultiGraph, TPie, gROOT, TF1
-from numpy import sign, linspace, ones, ceil, append, tile, absolute, rot90, flip, argsort, ndarray, arange, diff, pi, frombuffer, mean, concatenate, where, roll, indices, array_split, column_stack
+from numpy import sign, linspace, ones, ceil, append, tile, absolute, rot90, flip, argsort, ndarray, arange, diff, pi, frombuffer, concatenate, where, roll, indices, array_split, column_stack
 from screeninfo import get_monitors, Monitor, common
 from scipy.stats import binned_statistic
 from warnings import catch_warnings, simplefilter
@@ -775,13 +775,15 @@ class Draw(object):
     def make_tgraph(x=None, y=None, **kwargs):
         if len(list(x)) != len(list(y)) or not len(x):
             return warning('Arrays have different size!')
-        x, y = array(x), array(y)
-        asym = len(x.shape) == 2 or len(y.shape) == 2
-        s, utypes, has_ers = len(x), [type(v[0]) in [Variable, AffineScalarFunc] for v in [x, y]], [len(v.shape) > 1 for v in [x, y]]
-        ex, ey = [array([[v.s for v in vals]] if is_u else vals[:, 1:3].T if has_e else [zeros(s)], 'd') for vals, is_u, has_e in zip([x, y], utypes, has_ers)]
-        ex, ey = [array([[[v.s] * 2 for v in vals]] if is_u else vals[:, 1:3] if has_e else zeros((s, 2)), 'd').T for vals, is_u, has_e in zip([x, y], utypes, has_ers)] if asym else (ex, ey)
-        x, y = [array([v.n for v in vals] if utype else vals[:, 0] if has_e else vals, 'd') for vals, utype, has_e in zip([x, y], utypes, has_ers)]
-        g = (TGraphAsymmErrors if asym else TGraphErrors)(s, x, y, *array(ex.tolist()), *array(ey.tolist()))  # doesn't work without double conversion...
+        d = [[make_list(i) for i in lst] for lst in [x, y]]  # make all entries arrays
+        if any([i.size == 3 for lst in d for i in lst]):
+            x, y = array(array([[[v[0].n, v[0].s, v[0].s] if is_ufloat(v[0]) else append(v, zeros(3 - v.size)) for v in lst] for lst in d]).tolist())
+            x, ex1, ex2, y, ey1, ey2 = [a.astype('d') for a in concatenate([x.T, y.T])]
+            g = TGraphAsymmErrors(len(x), x, y, ex1, ex2, ey1, ey2)
+        else:
+            x, y = array([[[v[0].n, v[0].s] if is_ufloat(v[0]) else append(v, zeros(2 - v.size)) for v in lst] for lst in d])
+            x, ex, y, ey = [a.astype('d') for a in concatenate([x.T, y.T])]
+            g = TGraphErrors(len(x), x, y, ex, ey)
         format_histo(g, Draw.get_name('g'), **prep_kw(kwargs, marker=20, markersize=1))
         return Draw.add(g)
 
