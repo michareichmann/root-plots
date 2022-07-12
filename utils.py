@@ -11,7 +11,7 @@ from os.path import exists, isfile, join
 from time import time
 from pathlib import Path
 
-from numpy import array, zeros, count_nonzero, sqrt, average, full, all, quantile, arctan2, cos, sin, corrcoef, isfinite
+from numpy import array, zeros, count_nonzero, sqrt, average, full, all, quantile, arctan2, cos, sin, corrcoef, isfinite, mean
 from uncertainties import ufloat_fromstr, ufloat
 from uncertainties.core import Variable, AffineScalarFunc
 
@@ -100,11 +100,11 @@ def is_iter(v):
 
 
 def is_ufloat(value):
-    return type(value) in [Variable, AffineScalarFunc]
+    return type(value) in [Variable, AffineScalarFunc, AsymVar]
 
 
-def uarr2n(arr):
-    return array([i.n for i in arr]) if len(arr) and is_ufloat(arr[0]) else arr
+def uarr2n(x):
+    return array([i.n for i in x]) if len(x) and is_ufloat(x[0]) else x
 
 
 def uarr2s(arr):
@@ -304,3 +304,108 @@ class Config(ConfigParser):
     def write(self, file_name=None, space_around_delimiters=True):
         with open(choose(file_name, self.FilePath), 'w') as f:
             super(Config, self).write(f, space_around_delimiters)
+
+
+class AsymVar:
+
+    def __init__(self, value, err_down, err_up, fmt='.2f'):
+        self.NominalValue = float(value)
+        self.ErrDown = float(err_down)
+        self.ErrUp = float(err_up)
+        self.Format = fmt
+
+    def __len__(self):
+        return 3
+
+    def __str__(self):
+        return self.format()
+
+    def __repr__(self):
+        return self.format()
+
+    def __gt__(self, other):
+        return self.n > (other.n if type(other) is AsymVar else other)
+
+    def __lt__(self, other):
+        return self.n < (other.n if type(other) is AsymVar else other)
+
+    def __neg__(self):
+        return AsymVar(-self.n, self.s0, self.s1)
+
+    def __add__(self, other):
+        if other == self:
+            self.NominalValue *= 2
+            self.ErrDown *= 2
+            self.ErrUp *= 2
+        elif type(other) is AsymVar:
+            self.NominalValue += other.n
+            self.ErrDown = (ufloat(0, self.s0) + ufloat(0, other.s1)).s
+            self.ErrUp = (ufloat(0, self.s1) + ufloat(0, other.s0)).s
+        elif is_ufloat(other):
+            self.NominalValue += other.n
+            self.ErrDown = (ufloat(0, self.s0) + other).s
+            self.ErrUp = (ufloat(0, self.s1) + other).s
+        else:
+            self.NominalValue += float(other)
+        return self
+
+    def __sub__(self, other):
+        return self.__add__(-other)
+
+    def __truediv__(self, other):
+        if is_ufloat(other):
+            return warning('not implemented')
+        return AsymVar(*self.a / other)
+
+    def __mul__(self, other):
+        if is_ufloat(other):
+            return warning('not implemented')
+        return AsymVar(*self.a * other)
+
+    def __iter__(self):
+        return iter([self.n, self.s0, self.s1])
+
+    def __getitem__(self, item):
+        return [self.NominalValue, self.ErrUp, self.ErrDown][item]
+
+    def format(self, fmt=None, unit=''):
+        f = choose(fmt, self.Format)
+        return f'({self.n:{f}}+{self.s0:{f}}-{self.s1:{f}}){unit}'
+
+    @property
+    def to_ufloat(self):
+        return ufloat(self.n, mean(self.s))
+    u = to_ufloat
+
+    @property
+    def to_array(self):
+        return array(self)
+    a = to_array
+
+    @property
+    def nominal_value(self):
+        return self.NominalValue
+    n = nominal_value  # abbreviation
+
+    @property
+    def lower_error(self):
+        return self.ErrDown
+    s0 = lower_error
+
+    @property
+    def upper_error(self):
+        return self.ErrUp
+    s1 = upper_error
+
+    @property
+    def error(self):
+        return array([self.s0, self.s1])
+    s = error
+
+
+def aufloat(n, s0=0, s1=0):
+    return AsymVar(n, s0, s1)
+
+
+def add_asym_error(v, s0=0, s1=0):
+    return array([add_asym_error(i, s0, s1) for i in v], dtype=AsymVar) if is_iter(v) else AsymVar(0, s0, s1) + v
