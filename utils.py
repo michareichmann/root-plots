@@ -404,6 +404,11 @@ class AsymVar:
         return array([self.s0, self.s1])
     s = error
 
+    @property
+    def flip_errors(self):
+        return AsymVar(self.n, self.s1, self.s0)
+    f = flip_errors
+
 
 def aufloat(n, s0=0, s1=0):
     return AsymVar(n, s0, s1)
