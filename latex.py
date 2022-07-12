@@ -33,8 +33,12 @@ def si_2err(*v, fmt='.1f', unt=None):
     return f('SIserr', *[f'{i:{fmt}}' for i in v], f(unt))
 
 
-def num(*v, fmt='.1f'):
-    return [f('num', f'{i:{fmt}}').replace('/', '') for i in v]
+def num(*v, fmt='.1f', rm='@'):
+    return [num_2err(i) if hasattr(i, '__len__') else f('num', f'{i:{fmt}}').replace('/', '').replace(rm, '') for i in v]
+
+
+def num_2err(v, fmt='.1f'):
+    return f('numerr', *[f'{i:{fmt}}' for i in v])
 
 
 def si_range(v0, v1, fmt='.0f', unt=None):
