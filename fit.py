@@ -84,12 +84,12 @@ class Fit(object):
             Draw.vertical_line(t0, -100, 1e5)
         return t1 - t0
 
-    def fit(self, n=1, draw=True, minuit=True):
+    def fit(self, n=1, draw=True, minuit=True, fl=0, fh=0):
         if minuit:
             Math.MinimizerOptions.SetDefaultMinimizer('Minuit2', 'Migrad')
         for _ in range(n):
             set_root_output(0)
-            self.Histo.Fit(self.Fit, f'qs{"" if draw else 0}', '', self.XMin, self.XMax)
+            self.Histo.Fit(self.Fit, f'qs{"" if draw else 0}', '', *ax_range(self.XMin, self.XMax, fl, fh))
         set_root_output(True)
         if draw:
             self.Fit.Draw('same')

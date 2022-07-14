@@ -9,7 +9,7 @@ from typing import Any
 
 from ROOT import TGraphErrors, TGaxis, TLatex, TGraphAsymmErrors, TCanvas, gStyle, TLegend, TArrow, TPad, TCutG, TLine, TPaveText, TPaveStats, TH1F, TEllipse, TColor, TProfile
 from ROOT import TProfile2D, TH2F, TH3F, THStack, TMultiGraph, TPie, gROOT, TF1
-from numpy import sign, linspace, ones, ceil, append, tile, absolute, rot90, flip, argsort, ndarray, arange, diff, pi, frombuffer, mean, concatenate, where, roll, indices
+from numpy import sign, linspace, ones, ceil, append, tile, absolute, rot90, flip, argsort, ndarray, arange, diff, pi, frombuffer, concatenate, where, roll, indices, array_split, column_stack
 from screeninfo import get_monitors, Monitor, common
 from scipy.stats import binned_statistic
 from warnings import catch_warnings, simplefilter
@@ -99,7 +99,7 @@ def get_color_gradient():
 
 class Draw(object):
 
-    Dir = dirname(realpath(__file__))
+    Dir = Path(__file__).resolve().parent
     Verbose = False
     Config = None
     Monitor = None
@@ -114,6 +114,7 @@ class Draw(object):
     Info = None
     FillColor = 871
     Font = 42
+    Solid = 1001
 
     DefaultStats = {'x2': None, 'y2': None, 'h': None, 'w': .3, 'entries': False, 'm': False, 'rms': False, 'all_stat': True, 'fit': False, 'center_x': False, 'center_y': False, 'form': None}
     Stats = {}
@@ -154,6 +155,18 @@ class Draw(object):
 
     def __repr__(self):
         return f'ROOT {self.__class__.__name__} instance: Title = {get_stat(Draw.Title)}, Show = {get_stat(Draw.Show)}, Info = {get_stat(self.Info)}'
+
+    @property
+    def activate(self):
+        Draw.Show = True
+        return True
+    a = activate
+
+    @property
+    def deactivate(self):
+        Draw.Show = False
+        return False
+    d = deactivate
 
     # ----------------------------------------
     # region INIT
@@ -354,6 +367,14 @@ class Draw(object):
         x, y = array([(x, f(x)) for x in linspace(x1, x2, n)] + [(x2, y), (x1, y)]).T
         Draw.polygon(x, y, name=name, **kwargs)
 
+    def segment(self, x, y, w, ox=0, oy=0, color=2, **dkw):
+        x, y = x - ox, y - oy
+        x, y = append(x, x[0]), append(y, y[0])
+        xi, yi = [[j + (w if j == min(i) else -w) for j in i] for i in [x, y]]
+        self.graph(x, y, draw_opt='samel', **prep_kw(dkw, color=color))
+        self.graph(xi, yi, draw_opt='samel', **prep_kw(dkw, color=color))
+        return self.graph(concatenate([x, xi]), concatenate([y, yi]), draw_opt='samef', **prep_kw(dkw, fill_style=Draw.Solid, fill_color=color, color=color))
+
     @staticmethod
     def tlatex(x, y, text, name=None, align=20, color=1, size=.05, angle=None, ndc=None, font=42, show=True):
         tlatex = TLatex(x, y, text)
@@ -410,22 +431,23 @@ class Draw(object):
         return t
 
     @staticmethod
-    def stats(fit, x2=None, y2=None, w=.3, prec='1.1f', names=None, rm_entries=None):
-        names = fit.Names if names is None else names
-        c = get_last_canvas()
-        p = TPaveStats(*get_stat_pos(c, fit.NPar - make_list(rm_entries).size + 1, x2, y2, w=w), 'ndc')
-        p.SetBorderSize(1)
-        p.SetFillColor(0)
-        p.SetFillStyle(0)
-        leg = p.AddText('Fit Result')
-        leg.SetTextFont(42)
-        ls = p.GetListOfLines()
-        ls.Add(Draw.tlatex(0, 0, '#chi^{{2}} / ndf  = {chi2:{p}} / {ndf}'.format(ndf=fit.Ndf(), chi2=fit.Chi2(), p=prec), size=0, align=0, font=42))
-        for i in range(fit.NPar):
-            if i not in make_list(rm_entries):
-                ls.Add(Draw.tlatex(0, 0, '{n}  = {v:{p}} #pm {e:{p}}'.format(n=names[i], v=fit.Parameter(i), e=fit.ParError(i), p=prec), size=0, align=0, font=42))
-        p.Draw()
-        return Draw.add(p)
+    def stats(fit, x2=None, y2=None, w=.3, prec='1.1f', names=None, rm_entries=None, left=False, **_kw):
+        if fit is not None:
+            names = fit.Names if names is None else names
+            c = get_last_canvas()
+            p = TPaveStats(*get_stat_pos(c, fit.NPar - make_list(rm_entries).size + 1, x2, y2, w=w, left=left), 'ndc')
+            p.SetBorderSize(1)
+            p.SetFillColor(0)
+            p.SetFillStyle(Draw.Solid)
+            leg = p.AddText('Fit Result')
+            leg.SetTextFont(42)
+            ls = p.GetListOfLines()
+            ls.Add(Draw.tlatex(0, 0, '#chi^{{2}} / ndf  = {chi2:{p}} / {ndf}'.format(ndf=fit.Ndf(), chi2=fit.Chi2(), p=prec), size=0, align=0, font=42))
+            for i in range(fit.NPar):
+                if i not in make_list(rm_entries):
+                    ls.Add(Draw.tlatex(0, 0, '{n}  = {v:{p}} #pm {e:{p}}'.format(n=names[i], v=fit.Parameter(i), e=fit.ParError(i), p=prec), size=0, align=0, font=42))
+            p.Draw()
+            return Draw.add(p)
 
     @staticmethod
     def add_stats_entry(h, key, value, form='.2f', line=None):
@@ -461,7 +483,7 @@ class Draw(object):
         do(e.SetLineColor, color)
         do(e.SetFillColor, choose(fill_color, color))
         do(e.SetLineWidth, w)
-        e.SetFillStyle(1001 if fill else 0)
+        e.SetFillStyle(Draw.Solid if fill else 0)
         e.Draw() if show else do_nothing()
         return Draw.add(e)
 
@@ -492,7 +514,7 @@ class Draw(object):
 
     @staticmethod
     def histo(th, show=True, lm=None, rm=None, bm=None, tm=None, m=None, draw_opt=None, w=1, h=1, logx=None, logy=None, logz=None, grid=None, gridy=None, gridx=None, phi=None, theta=None,
-              leg=None, canvas=None, sumw2=None, stats=False, all_pads=False, info_leg=True, **kwargs):
+              leg=None, ldraw=None, canvas=None, sumw2=None, stats=False, all_pads=False, info_leg=True, **kwargs):
         w += .16 if not Draw.Title and w == 1 else 0  # rectify if there is no title
         th.Sumw2(sumw2) if hasattr(th, 'Sumw2') and sumw2 is not None else do_nothing()
         Draw.set_show(show)
@@ -502,11 +524,12 @@ class Draw(object):
         do([c.SetLogx, c.SetLogy, c.SetLogz], [logx, logy, logz])
         do([c.SetGridx, c.SetGridy], [gridx or grid, gridy or grid])
         do([c.SetPhi, c.SetTheta], [phi, theta])
+        c.cd()
         th.Draw(draw_opt if draw_opt is not None else 'ap' if is_graph(th) else 'hist' if 'TH' in th.ClassName() else '')
         if leg is not None:
             update_canvas()
             for i_leg in make_list(leg):
-                i_leg.Draw('same')
+                i_leg.Draw(choose(ldraw, 'same'))
                 th.GetListOfFunctions().Add(i_leg) if hasattr(th, 'GetListOfFunctions') else do_nothing()
         if info_leg:
             Draw.Info.draw(c, all_pads)
@@ -520,25 +543,27 @@ class Draw(object):
     def mode(m=1, **kwargs):
         d = {1: {'tit_size': .05, 'lab_size': .045, 'y_off': 1.35},
              2: {'w': 1.5, 'h': .75, 'tit_size': .06, 'lab_size': .05, 'y_off': .7, 'lm': .08, 'bm': .15},
-             3: {'w': 1.5, 'h': .5, 'tit_size': .07, 'lab_size': .06, 'y_off': .5, 'lm': .073, 'bm': .225, 'rm': .03, 'x_tit': 'Time [ns]', 'y_tit': 'Signal [mV]', 'markersize': .5},
+             3: {'w': 1.5, 'h': .5, 'tit_size': .09, 'lab_size': .08, 'y_off': .45, 'lm': .08, 'bm': .18, 'rm': .03, 'x_tit': 'Time [ns]', 'y_tit': 'Signal [mV]', 'markersize': .5},
              4: {'tit_size': .05, 'lab_size': .045, 'tick_size': 0, 'l_off_y': 10, 'l_off_x': 10, 'center_x': True, 'center_y': True, 'y_off': .5, 'x_off': .5, 'lm': .066, 'bm': .066},
              5: {'tit_size': .08, 'lab_size': .07, 'y_off': 1.02, 'lm': .17, 'bm': .15}
              }[m]
         return prep_kw(kwargs, **d)
 
-    def distribution(self, x, binning=None, title='', q=.02, lf=.2, rf=.2, r=None, w=None, x0=None, **kwargs):
+    def distribution(self, x, binning=None, title='', q=.02, lf=.2, rf=.2, n=1, r=None, w=None, x0=None, x1=None, **kwargs):
         if is_root_object(x):
             th = x
         else:
-            th = TH1F(Draw.get_name('h'), title, *choose(binning, find_bins, values=x, q=q, lfac=lf, rfac=rf, r=r, w=w, x0=x0))
+            th = TH1F(Draw.get_name('h'), title, *choose(binning, find_bins, values=x, q=q, n=n, lfac=lf, rfac=rf, r=r, w=w, x0=x0, x1=x1))
             fill_hist(th, x)
         format_histo(th, **prep_kw(kwargs, **Draw.mode(), fill_color=Draw.FillColor, y_tit='Number of Entries' if not th.GetYaxis().GetTitle() else None))
         self.histo(th, **prep_kw(kwargs, stats=None))
         return th
 
-    def function(self, f, title='', c=None, **dkw):
+    def function(self, f, title='', c=None, graph=False, **dkw):
+        x = linspace(f.GetXmin(), f.GetXmax(), 100)
+        f = Draw.make_tgraph(x, [f(i) for i in x]) if graph else f
         format_histo(f, title=title, **prep_kw(dkw, **Draw.mode()))
-        self.histo(f, **prep_kw(dkw, canvas=c))
+        self.histo(f, **prep_kw(dkw, canvas=c, line_color=2, draw_opt='al' if graph else None))
         return f
 
     def functions(self, f, leg_titles=None, wl=.2, **dkw):
@@ -548,19 +573,25 @@ class Draw(object):
         [self(i, draw_opt='same', **prep_kw(dkw, color=self.get_color(len(f)))) for i in f[1:]]
         return get_last_canvas()
 
-    def graph(self, x, y=None, title='', bm=None, show=True, bin_labels=None, **kwargs):
-        g = x if y is None else Draw.make_tgrapherrors(x, y)
-        format_histo(g, title=title, **prep_kw(kwargs, **Draw.mode(), fill_color=Draw.FillColor))
+    def graph(self, x, y=None, title='', bin_labels=None, **dkw):
+        g = x if y is None else Draw.make_tgraph(x, y)
+        format_histo(g, title=title, **prep_kw(dkw, **Draw.mode(), fill_color=Draw.FillColor))
         set_bin_labels(g, bin_labels)
-        self.histo(g, show=show, bm=choose(bm, .24 if bin_labels else None), **kwargs)
+        self.histo(g, **prep_kw(dkw, bm=.24 if bin_labels else None))
         return g
 
-    def profile(self, x, y=None, binning=None, title='', q=.02, w=None, x0=None, graph=False, **dkw):
+    def trend(self, x, y, title='', bw=None, n=20, **dkw):
+        x, y = [array_split(i, n if bw is None else arange(bw, x.size, bw)) for i in [x, y]]
+        x = abs(array([mean(i) + array([0, -i[0], -i[-1]]) for i in x]))
+        y = [mean_sigma(i)[0] for i in y]
+        return self.graph(x, y, title, **dkw)
+
+    def profile(self, x, y=None, binning=None, title='', q=.02, lf=.2, rf=.2, w=None, x0=None, graph=False, **dkw):
         if y is None:
             p = x
         else:
             x, y = array(x, dtype='d'), array(y, dtype='d')
-            p = TProfile(Draw.get_name('p'), title, *choose(binning, find_bins, values=x, q=q, w=w, x0=x0))
+            p = TProfile(Draw.get_name('p'), title, *choose(binning, find_bins, lfac=lf, rfac=rf, values=x, q=q, w=w, x0=x0))
             fill_hist(p, x, y)
         p = self.make_graph_from_profile(p) if graph else p
         format_histo(p, **prep_kw(dkw, **Draw.mode(), fill_color=Draw.FillColor))
@@ -583,12 +614,12 @@ class Draw(object):
         self.histo(p, **prep_kw(dkw,  rm=.17 if 'z' in draw_opt else None, stats=choose(get_kw('stats', dkw), set_statbox, entries=True, w=.25), draw_opt=draw_opt))
         return p
 
-    def histo_2d(self, x, y=None, binning=None, title='', q=.02, qz=None, z0=None, canvas=None, rot=None, mirror=None, centre=None, **dkw):
+    def histo_2d(self, x, y=None, binning=None, title='', q=.02, n=1, lf=.2, rf=.2, qz=None, z0=None, canvas=None, rot=None, mirror=None, centre=None, **dkw):
         if y is None:
             th = x
         else:
             x, y = array(x, dtype='d'), array(y, dtype='d')
-            th = TH2F(Draw.get_name('h2'), title, *find_bins(x, q=q) + find_bins(y, q=q) if binning is None else binning)
+            th = TH2F(Draw.get_name('h2'), title, *sum([find_bins(i, q=q, n=n, rfac=rf, lfac=lf) for i in [x, y]], start=[]) if binning is None else binning)
             fill_hist(th, x, y)
         th = self.rotate_2d(th, rot)
         th = self.flip_2d(th, mirror)
@@ -610,9 +641,11 @@ class Draw(object):
         x, y = get_hist_args(p), array([calc_eff(p0 * n, n) if n else [-1, 0, 0] for p0, n in [[p.GetBinContent(ibin), p.GetBinEntries(ibin)] for ibin in range(1, p.GetNbinsX() + 1)]])
         return self.graph(x[y[:, 0] != -1], y[y[:, 0] != -1], **prep_kw(kwargs, title='Efficiency', y_tit='Efficiency [%]'))
 
-    def pull(self, h, binning=None, ret_h=False, **kwargs):
-        x = get_graph_y(h, err=False) if is_graph(h) else get_hist_vec(h, err=False)
-        th = self.distribution(x, choose(binning, find_bins, values=x[x != 0], lfac=.5, rfac=.5, n=2), x_tit=h.GetYaxis().GetTitle(), **kwargs)
+    def pull(self, h, binning=None, ret_h=False, **dkw):
+        x = h if type(h) in [list, ndarray] else get_h_values(h)
+        m, s = mean_sigma(x)
+        x = uarr2n((x - m) / s)
+        th = self.distribution(x, binning, **prep_kw(dkw, rf=.5, lf=.5, n=2, x_tit=f'Normalised {h.GetYaxis().GetTitle()}'.split('[')[0] if hasattr(h, 'Class') else None))
         return th if ret_h else mean_sigma(x[x != 0])
 
     def stack(self, histos, title='', leg_titles=None, scale=False, fill=None, w=.2, **dkw):
@@ -620,16 +653,17 @@ class Draw(object):
         for h in histos:
             s.Add(h, 'hist')
             color = self.get_color(len(histos))
-            format_histo(h, color=color, fill_color=choose(color, 0, fill), fill_style=choose(1001, 4000, fill), stats=0, **dkw)
+            format_histo(h, color=color, fill_color=choose(color, 0, fill), fill_style=choose(Draw.Solid, 4000, fill), stats=0, **dkw)
             if scale:
                 h.Scale(1 / h.GetMaximum())
         h0 = histos[0]
-        format_histo(s, draw_first=True, x_tit=h0.GetXaxis().GetTitle(), y_tit=h0.GetYaxis().GetTitle(), y_off=h0.GetYaxis().GetTitleOffset())
-        leg = self.legend(histos, leg_titles, 'p', w=w) if leg_titles else None
+        self.histo(s, show=False, save=False, draw_opt='nostack')
+        format_histo(s, **prep_kw(dkw, x_tit=h0.GetXaxis().GetTitle(), y_tit=h0.GetYaxis().GetTitle(), **Draw.mode(1, y_off=h0.GetYaxis().GetTitleOffset())))
+        leg = self.legend(histos, leg_titles, 'l', w=w) if leg_titles else None
         self.histo(s, **prep_kw(dkw, draw_opt='nostack', leg=leg, lm=get_last_canvas().GetLeftMargin()))
         return s
 
-    def multigraph(self, graphs, title='', leg_titles=None, bin_labels=None, draw_opt='p', wleg=.2, **kwargs):
+    def multigraph(self, graphs, title='', leg_titles=None, bin_labels=None, draw_opt='p', wleg=.2, **dkw):
         if hasattr(graphs, 'GetName'):
             m, g0 = graphs, graphs.GetListOfGraphs()[0]
         else:
@@ -637,12 +671,14 @@ class Draw(object):
             m = TMultiGraph(Draw.get_name('mg'), ';'.join([title, g0.GetXaxis().GetTitle(), g0.GetYaxis().GetTitle()]))
             for i, g in enumerate(graphs):
                 m.Add(g, draw_opt)
-                format_histo(g, **prep_kw(kwargs, color=self.get_color(len(graphs)), stats=False))
+                color = None if get_kw('color', dkw, 2) is None else self.get_color(len(graphs))
+                format_histo(g, **prep_kw(dkw, color=color, stats=False))
         y_range = ax_range(get_graph_y(graphs, err=False), 0, .3, .6)
-        format_histo(m, draw_first=True, **prep_kw(kwargs, **Draw.mode(1, y_off=g0.GetYaxis().GetTitleOffset()), y_range=y_range, x_tit=choose('', None, bin_labels)))
+        self.histo(m, show=False, save=False, canvas=get_kw('canvas', dkw, None))
+        format_histo(m, **prep_kw(dkw, **Draw.mode(1, y_off=g0.GetYaxis().GetTitleOffset()), y_tit=g0.GetYaxis().GetTitle(), y_range=y_range, x_tit=choose('', None, bin_labels)))
         set_bin_labels(m, bin_labels)
         leg = self.legend(graphs, leg_titles, draw_opt, w=wleg) if leg_titles else None
-        self.histo(m, **prep_kw(kwargs, leg=leg, bm=choose(.26, None, bin_labels), draw_opt='ap'))
+        self.histo(m, **prep_kw(dkw, leg=leg, bm=choose(.26, None, bin_labels), draw_opt='ap'))
         return m
 
     def pie(self, labels, values=None, colors=None, title='', offset=0, show=True, flat=False, draw_opt=None, **kwargs):
@@ -736,16 +772,18 @@ class Draw(object):
         return Draw.add(f0)
 
     @staticmethod
-    def make_tgrapherrors(x=None, y=None, **kwargs):
+    def make_tgraph(x=None, y=None, **kwargs):
         if len(list(x)) != len(list(y)) or not len(x):
             return warning('Arrays have different size!')
-        x, y = array(x), array(y)
-        asym = len(x.shape) == 2 or len(y.shape) == 2
-        s, utypes, has_ers = len(x), [type(v[0]) in [Variable, AffineScalarFunc] for v in [x, y]], [len(v.shape) > 1 for v in [x, y]]
-        ex, ey = [array([[v.s for v in vals]] if is_u else vals[:, 1:3].T if has_e else [zeros(s)], 'd') for vals, is_u, has_e in zip([x, y], utypes, has_ers)]
-        ex, ey = [array([[[v.s] * 2 for v in vals]] if is_u else vals[:, 1:3] if has_e else zeros((s, 2)), 'd').T for vals, is_u, has_e in zip([x, y], utypes, has_ers)] if asym else (ex, ey)
-        x, y = [array([v.n for v in vals] if utype else vals[:, 0] if has_e else vals, 'd') for vals, utype, has_e in zip([x, y], utypes, has_ers)]
-        g = (TGraphAsymmErrors if asym else TGraphErrors)(s, x, y, *array(ex.tolist()), *array(ey.tolist()))  # doesn't work without double conversion...
+        d = [[make_list(i) for i in lst] for lst in [x, y]]  # make all entries arrays
+        if any([i.size == 3 for lst in d for i in lst]):
+            x, y = array(array([[[v[0].n, v[0].s, v[0].s] if is_ufloat(v[0]) else append(v, zeros(3 - v.size)) for v in lst] for lst in d]).tolist())
+            x, ex1, ex2, y, ey1, ey2 = [a.astype('d') for a in concatenate([x.T, y.T])]
+            g = TGraphAsymmErrors(len(x), x, y, ex1, ex2, ey1, ey2)
+        else:
+            x, y = array([[[v[0].n, v[0].s] if is_ufloat(v[0]) else append(v, zeros(2 - v.size)) for v in lst] for lst in d])
+            x, ex, y, ey = [a.astype('d') for a in concatenate([x.T, y.T])]
+            g = TGraphErrors(len(x), x, y, ex, ey)
         format_histo(g, Draw.get_name('g'), **prep_kw(kwargs, marker=20, markersize=1))
         return Draw.add(g)
 
@@ -753,13 +791,13 @@ class Draw(object):
     def make_graph_from_profile(p, nmin=2):
         (x, y), n = get_hist_vecs(p), get_bin_entries(p)
         cut = (y != 0) & (n >= nmin)
-        return Draw.make_tgrapherrors(x[cut], y[cut], title=p.GetTitle(), x_tit=p.GetXaxis().GetTitle(), y_tit=p.GetYaxis().GetTitle())
+        return Draw.make_tgraph(x[cut], y[cut], title=p.GetTitle(), x_tit=p.GetXaxis().GetTitle(), y_tit=p.GetYaxis().GetTitle())
 
     @staticmethod
     def make_legend(x2=None, y2=None, w=.25, nentries=2, scale=1, ts=None, d=.01, y1=None, x1=None, clean=False, margin=.25, cols=None, fix=False, bottom=False, left=False, c=None, **kwargs):
         _ = kwargs
         use_margins = y2 is None
-        h = nentries // choose(cols, 1) * .05 * scale
+        h = nentries // choose(cols, 1) * .06 * scale
         x2, y2 = get_stat_margins(c, x2, y2, d, bottom, left, h, w)
         x1 = choose(x1, x2 - w)
         y1 = choose(y1, y2 - h)
@@ -978,9 +1016,9 @@ def set_2d_ranges(h, dx, dy):
     format_histo(h, x_range=[xmid - dx, xmid + dx], y_range=[ymid - dy, ymid + dx])
 
 
-def find_bins(values, lfac=.2, rfac=.2, q=.02, n=1, lq=None, w=None, x0=None, r=None):
-    width, (xmin, xmax) = choose(w, bin_width(values) * n), find_range(values, lfac, rfac, q, lq) if r is None else r
-    bins = arange(choose(x0, xmin), xmax + width, width)
+def find_bins(values, lfac=.2, rfac=.2, q=.02, n=1, lq=None, w=None, x0=None, x1=None, r=None):
+    width, (xmin, xmax) = choose(w, bin_width(values) * n), find_range(values, lfac, rfac, q, lq) if r is None else array(r, 'd')
+    bins = arange(choose(x0, xmin), choose(x1, xmax) + width, width)
     return [bins.size - 1, bins]
 
 
@@ -1056,18 +1094,45 @@ def set_titles(status=True):
     gStyle.SetOptTitle(status)
 
 
-def get_graph_vecs(g, err=True):
-    return get_graph_x(g, err), get_graph_y(g, err)
+def get_graph_vecs(g, err=True, as_u=True):
+    return get_graph_x(g, err, as_u), get_graph_y(g, err, as_u)
 
 
-def get_graph_x(g, err=True):
-    return make_ufloat(frombuffer(g.GetX()), frombuffer(g.GetEX())) if err and 'Error' in g.ClassName() else frombuffer(g.GetX())
-
-
-def get_graph_y(g, err=True):
+def graph_vec(g, m, err=False, as_u=True):
     if is_iter(g):
-        return array([v for ig in g for v in get_graph_y(ig, err)])
-    return make_ufloat(frombuffer(g.GetY()), frombuffer(g.GetEY())) if err and 'Error' in g.ClassName() else frombuffer(g.GetY())
+        return array([v for ig in g for v in graph_vec(ig, m, err)])
+    v = frombuffer(getattr(g, f'Get{m}')())
+    if 'Asym' in g.ClassName() and err:
+        e = array([frombuffer(getattr(g, f'GetE{m}{att}')(), count=g.GetN()) for att in ['low', 'high']]).T
+        return make_ufloat(v, mean(e, axis=1)) if as_u else column_stack([v, e])
+    elif 'Error' in g.ClassName() and err:
+        e = frombuffer(getattr(g, f'GetE{m}')())
+        return make_ufloat(v, e) if as_u else array([v, e]).T
+    return v
+
+
+def get_graph_x(g, err=True, as_u=True):
+    return graph_vec(g, 'X', err, as_u)
+
+
+def get_graph_y(g, err=True, as_u=True):
+    return graph_vec(g, 'Y', err, as_u)
+
+
+def shift_graph(g, ox=0, oy=0):
+    if is_iter(g):
+        return [shift_graph(ig, ox, oy) for ig in g]
+    if 'Asym' in g.ClassName():
+        x, y = get_graph_vecs(g, as_u=False)
+        for i in range(x.shape[0]):
+            g.SetPoint(i, x[i][0] + ox, y[i][0] + oy)
+            g.SetPointError(i, *x[i][1:], *y[i][1:])
+    else:
+        for i, (x, y) in enumerate(array(get_graph_vecs(g)).T + [ox, oy]):
+            g.SetPoint(i, x.n, y.n)
+            if 'Error' in g.ClassName():
+                g.SetPointError(i, x.s, y.s)
+    return g
 
 
 def get_hist_vec(p, err=True):
@@ -1183,8 +1248,14 @@ def get_quantile(h, q):
     return v[0] if v.size == 1 else v
 
 
-def markers(i):
-    return ((list(range(20, 24)) + [29, 33, 34]) * 2)[i]
+def markers(i, duo=False):
+    return duo_markers(i) if duo else ((list(range(20, 24)) + [29, 33, 34]) * 2)[i]
+
+
+def duo_markers(i):
+    """ :returns full and open marker"""
+    full_, open_ = [20, 21, 22, 23, 29, 33, 34], [24, 25, 26, 32, 30, 27, 28]
+    return list(concatenate(array([full_, open_]).T).tolist())[i]
 
 
 def set_palette(*pal):
@@ -1212,7 +1283,7 @@ def show_colors(colors):
     c = Draw.canvas(divide=(int(ceil(sqrt(n))), int(ceil(sqrt(n)))))
     for i, col in enumerate(colors, 1):
         c.cd(i)
-        Draw.box(0, 0, 1, 1, fillstyle=1001, fillcolor=col)
+        Draw.box(0, 0, 1, 1, fillstyle=Draw.Solid, fillcolor=col)
         Draw.tlatex(.5, .5, str(i - 1), align=22, size=.2)
 
 

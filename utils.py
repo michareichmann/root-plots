@@ -7,15 +7,16 @@ from copy import deepcopy
 from datetime import datetime
 from json import loads, load
 from os import _exit, makedirs, remove
-from os.path import dirname, realpath, exists, isfile, join
+from os.path import exists, isfile, join
 from time import time
 from pathlib import Path
 
-from numpy import array, zeros, count_nonzero, sqrt, average, full, all, quantile, arctan2, cos, sin, corrcoef, isfinite
+from numpy import array, zeros, count_nonzero, sqrt, average, full, all, quantile, arctan2, cos, sin, corrcoef, isfinite, mean
 from uncertainties import ufloat_fromstr, ufloat
 from uncertainties.core import Variable, AffineScalarFunc
 
-BaseDir = dirname(dirname(realpath(__file__)))
+BaseDir = Path(__file__).resolve().parent.parent
+
 
 ON = True
 OFF = False
@@ -99,11 +100,15 @@ def is_iter(v):
 
 
 def is_ufloat(value):
-    return type(value) in [Variable, AffineScalarFunc]
+    return type(value) in [Variable, AffineScalarFunc, AsymVar]
 
 
-def uarr2n(arr):
-    return array([i.n for i in arr]) if len(arr) and is_ufloat(arr[0]) else arr
+def uarr2n(x):
+    return array([i.n for i in x]) if len(x) and is_ufloat(x[0]) else x
+
+
+def uarr2s(arr):
+    return array([i.s for i in arr]) if len(arr) and is_ufloat(arr[0]) else arr
 
 
 def arr2u(x, ex):
@@ -138,10 +143,11 @@ def get_kw(kw, kwargs, default=None):
     return kwargs[kw] if kw in kwargs else default
 
 
-def rm_key(d, key):
+def rm_key(d, *key):
     d = deepcopy(d)
-    if key in d:
-        del d[key]
+    for k in key:
+        if k in d:
+            del d[k]
     return d
 
 
@@ -151,15 +157,18 @@ def mean_sigma(values, weights=None, err=True):
         value = make_ufloat(values[0])
         return (value, ufloat(value.s, 0)) if err else (value.n, value.s)
     weights = full(len(values), 1) if weights is None else weights
-    if is_ufloat(values[0]):
-        errors = array([v.s for v in values])
-        weights = full(errors.size, 1) if all(errors == errors[0]) else [1 / e if e else 0 for e in errors]
-        values = array([v.n for v in values], 'd')
+    # variance defined weights: https://en.wikipedia.org/wiki/Inverse-variance_weighting
+    use_variance = is_ufloat(values[0])
+    if use_variance:
+        errors = uarr2s(values)
+        weights = full(errors.size, 1) if all(errors == errors[0]) else [1 / e ** 2 if e else 0 for e in errors]
+        values = uarr2n(values)
     if all(weights == 0):
         return [0, 0]
     n, avrg = values.size, average(values, weights=weights)
     sigma = sqrt(n / (n - 1) * average((values - avrg) ** 2, weights=weights))  # Fast and numerically precise
-    m, s = ufloat(avrg, sigma / (sqrt(len(values)) - 1)), ufloat(sigma, sigma / sqrt(2 * len(values)))
+    m = ufloat(avrg, sqrt(1 / sum(weights))) if use_variance else ufloat(avrg, sigma / sqrt(len(values) - 1))
+    s = ufloat(sigma, sigma / sqrt(2 * len(values)))
     return (m, s) if err else (m.n, s.n)
 
 
@@ -295,3 +304,115 @@ class Config(ConfigParser):
     def write(self, file_name=None, space_around_delimiters=True):
         with open(choose(file_name, self.FilePath), 'w') as f:
             super(Config, self).write(f, space_around_delimiters)
+
+
+class AsymVar:
+
+    def __init__(self, value, err_down, err_up, fmt='.2f'):
+        self.NominalValue = float(value)
+        self.ErrDown = float(err_down)
+        self.ErrUp = float(err_up)
+        self.Format = fmt
+
+    def __len__(self):
+        return 3
+
+    def __str__(self):
+        return self.format()
+
+    def __repr__(self):
+        return self.format()
+
+    def __gt__(self, other):
+        return self.n > (other.n if type(other) is AsymVar else other)
+
+    def __lt__(self, other):
+        return self.n < (other.n if type(other) is AsymVar else other)
+
+    def __neg__(self):
+        return AsymVar(-self.n, self.s0, self.s1)
+
+    def __add__(self, other):
+        if other == self:
+            self.NominalValue *= 2
+            self.ErrDown *= 2
+            self.ErrUp *= 2
+        elif type(other) is AsymVar:
+            self.NominalValue += other.n
+            self.ErrDown = (ufloat(0, self.s0) + ufloat(0, other.s1)).s
+            self.ErrUp = (ufloat(0, self.s1) + ufloat(0, other.s0)).s
+        elif is_ufloat(other):
+            self.NominalValue += other.n
+            self.ErrDown = (ufloat(0, self.s0) + other).s
+            self.ErrUp = (ufloat(0, self.s1) + other).s
+        else:
+            self.NominalValue += float(other)
+        return self
+
+    def __sub__(self, other):
+        return self.__add__(-other)
+
+    def __truediv__(self, other):
+        if is_ufloat(other):
+            return warning('not implemented')
+        return AsymVar(*self.a / other)
+
+    def __mul__(self, other):
+        if is_ufloat(other):
+            return warning('not implemented')
+        return AsymVar(*self.a * other)
+
+    def __iter__(self):
+        return iter([self.n, self.s0, self.s1])
+
+    def __getitem__(self, item):
+        return [self.NominalValue, self.ErrUp, self.ErrDown][item]
+
+    def __format__(self, f):
+        return f'{self.n:{f}}+{self.s0:{f}}-{self.s1:{f}}'
+
+    def format(self, fmt=None, unit=''):
+        return f'({self.__format__(choose(fmt, self.Format))}){unit}'
+
+    @property
+    def to_ufloat(self):
+        return ufloat(self.n, mean(self.s))
+    u = to_ufloat
+
+    @property
+    def to_array(self):
+        return array(self)
+    a = to_array
+
+    @property
+    def nominal_value(self):
+        return self.NominalValue
+    n = nominal_value  # abbreviation
+
+    @property
+    def lower_error(self):
+        return self.ErrDown
+    s0 = lower_error
+
+    @property
+    def upper_error(self):
+        return self.ErrUp
+    s1 = upper_error
+
+    @property
+    def error(self):
+        return array([self.s0, self.s1])
+    s = error
+
+    @property
+    def flip_errors(self):
+        return AsymVar(self.n, self.s1, self.s0)
+    f = flip_errors
+
+
+def aufloat(n, s0=0, s1=0):
+    return AsymVar(n, s0, s1)
+
+
+def add_asym_error(v, s0=0, s1=0):
+    return array([add_asym_error(i, s0, s1) for i in v], dtype=AsymVar) if is_iter(v) else AsymVar(0, s0, s1) + v
