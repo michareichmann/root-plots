@@ -259,17 +259,19 @@ class Config(ConfigParser):
         super(Config, self).__init__(**kwargs)
         self.FilePath = Path(file_name)
         self.read_dict(load_json(file_name)) if from_json else self.read(file_name) if type(file_name) is not list else self.read_file(file_name)
-        self.Section = section
+        self.Section = self.check_section(section)
 
     def __call__(self, section):
-        self.set_section(section)
-        return self
+        return Config(self.FilePath, section)
 
     def __repr__(self):
-        return f'{self.__class__.__name__}: {join(*self.FilePath.parts[-2:])}' + (f' (section = {self.Section})' if self.Section else '')
+        return f'{self.__class__.__name__}: {join(*self.FilePath.parts[-2:])}' + (f' (section = {self.Section})' if hasattr(self, 'Section') and self.Section else '')
+
+    def check_section(self, section):
+        return section if section is None or section in self else critical(f'No section {section} in {self}')
 
     def set_section(self, sec):
-        self.Section = sec if sec in self else critical(f'No section {sec} in {self}')
+        self.Section = self.check_section(sec)
 
     def get_value(self, section, option=None, dtype: type = str, default=None):
         dtype = type(default) if default is not None else dtype
