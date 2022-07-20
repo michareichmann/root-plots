@@ -37,13 +37,13 @@ def get_t_str():
     return datetime.now().strftime('%H:%M:%S')
 
 
-def colored(txt, color):
-    return f'{color}{txt}{ENDC}'
+def colored(txt, color=None):
+    return f'{color}{txt}{ENDC}' if color else txt
 
 
-def prnt_msg(txt, head, color=None, blank_lines=0, endl=True, prnt=True):
+def prnt_msg(txt, head='', color=None, blank_lines=0, endl=True, prnt=True):
     if prnt:
-        print('\n' * blank_lines + f'\r{color}{head}:{ENDC} {get_t_str()} --> {txt}', end='\n' if endl else ' ')
+        print('\n' * blank_lines + f'\r{colored(f"{head}:", color):<18} {get_t_str()} --> {txt}', end='\n' if endl else ' ')
 
 
 def info(txt, blank_lines=0, endl=True, prnt=True):
@@ -51,9 +51,8 @@ def info(txt, blank_lines=0, endl=True, prnt=True):
     return time()
 
 
-def add_to_info(t, msg='Done', prnt=True):
-    if prnt:
-        print('{m} ({t:2.2f} s)'.format(m=msg, t=time() - t))
+def add_to_info(t, msg='Done', color=None, prnt=True):
+    print(colored(f'{msg} ({time() - t:2.2f} s)', color)) if prnt else do_nothing()
 
 
 def warning(txt, blank_lines=0, prnt=True):
