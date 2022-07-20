@@ -7,13 +7,15 @@ from copy import deepcopy
 from datetime import datetime
 from json import loads, load
 from os import _exit, makedirs, remove
-from os.path import exists, isfile, join
+from os.path import exists, isfile, join, sep
 from time import time
 from pathlib import Path
 
 from numpy import array, zeros, count_nonzero, sqrt, average, full, all, quantile, arctan2, cos, sin, corrcoef, isfinite, mean
 from uncertainties import ufloat_fromstr, ufloat
 from uncertainties.core import Variable, AffineScalarFunc
+from inspect import getframeinfo, stack
+
 
 BaseDir = Path(__file__).resolve().parent.parent
 
@@ -60,6 +62,8 @@ def warning(txt, blank_lines=0, prnt=True):
 
 
 def critical(txt):
+    i = getframeinfo(stack()[1][0])
+    print(f'{sep.join(Path(i.filename).parts[-2:])}: {i.lineno}')
     prnt_msg(txt, 'CRITICAL', RED)
     _exit(2)
 
