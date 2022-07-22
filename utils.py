@@ -258,9 +258,11 @@ def load_json(filename):
 
 class Config(ConfigParser):
 
-    def __init__(self, file_name, section=None, from_json=False, **kwargs):
+    def __init__(self, file_name, section=None, from_json=False, required=False, **kwargs):
         super(Config, self).__init__(**kwargs)
         self.FilePath = Path(file_name)
+        if required and not self.FilePath.exists():
+            critical(f'{self!r} does not exist!')
         self.read_dict(load_json(file_name)) if from_json else self.read(file_name) if type(file_name) is not list else self.read_file(file_name)
         self.Section = self.check_section(section)
 
