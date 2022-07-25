@@ -10,6 +10,7 @@ from os import _exit, makedirs, remove
 from os.path import exists, isfile, join, sep
 from time import time
 from pathlib import Path
+from subprocess import check_call, check_output
 
 from numpy import array, zeros, count_nonzero, sqrt, average, full, all, quantile, arctan2, cos, sin, corrcoef, isfinite, mean
 from uncertainties import ufloat_fromstr, ufloat
@@ -423,3 +424,8 @@ def aufloat(n, s0=0, s1=0):
 
 def add_asym_error(v, s0=0, s1=0):
     return array([add_asym_error(i, s0, s1) for i in v], dtype=AsymVar) if is_iter(v) else AsymVar(0, s0, s1) + v
+
+
+def download_file(server, loc, target, out=True):
+    cmd = f'rsync -aPv {server}:{loc} {target}'
+    return (check_call if out else check_output)(cmd, shell=True)
