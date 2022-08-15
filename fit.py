@@ -37,6 +37,16 @@ class Fit(object):
     def __repr__(self):
         return f'{self.__class__.__name__} Fit: {self.Name} with {self.NPars} parameters'
 
+    @classmethod
+    def from_hist(cls, h):
+        try:
+            f = next(f for f in h.GetListOfFunctions() if 'TF1' in f.ClassName())
+            fit = Fit(f.GetName(), fit_range=[f.GetXmin(), f.GetXmax()], par_names=[f.GetParName(i) for i in range(f.GetNpar())])
+            fit.Fit = f
+            return fit
+        except StopIteration:
+            return
+
     def clear_old(self):
         old = get_object(self.Name)
         if old:
@@ -55,7 +65,7 @@ class Fit(object):
         return []
 
     def set_par_names(self):
-        self.Fit.SetParNames(*self.ParNames) if self.ParNames else do_nothing()
+        self.Fit.SetParNames(*self.ParNames) if self.ParNames and self.Fit.IsValid() else do_nothing()
 
     def set_par_limits(self):
         pass
