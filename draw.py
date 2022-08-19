@@ -672,7 +672,8 @@ class Draw(object):
             for i, g in enumerate(graphs):
                 m.Add(g, draw_opt)
                 color = None if get_kw('color', dkw, 2) is None else self.get_color(len(graphs))
-                format_histo(g, **prep_kw(dkw, color=color, stats=False))
+                marker = get_kw('marker', dkw) if 'marker' in dkw else markers(i)
+                format_histo(g, **prep_kw(dkw, marker=marker, color=color, stats=False))
         y_range = ax_range(get_graph_y(graphs, err=False), 0, .3, .6)
         self.histo(m, show=False, save=False, canvas=get_kw('canvas', dkw, None))
         format_histo(m, **prep_kw(dkw, **Draw.mode(1, y_off=g0.GetYaxis().GetTitleOffset()), y_tit=g0.GetYaxis().GetTitle(), y_range=y_range, x_tit=choose('', None, bin_labels)))
