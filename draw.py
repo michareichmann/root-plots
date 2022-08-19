@@ -648,7 +648,7 @@ class Draw(object):
         th = self.distribution(x, binning, **prep_kw(dkw, rf=.5, lf=.5, n=2, x_tit=f'Normalised {h.GetYaxis().GetTitle()}'.split('[')[0] if hasattr(h, 'Class') else None))
         return th if ret_h else mean_sigma(x[x != 0])
 
-    def stack(self, histos, title='', leg_titles=None, scale=False, fill=None, w=.2, **dkw):
+    def stack(self, histos, title='', leg_titles=None, scale=False, fill=None, ldraw='l', w=.2, **dkw):
         s = THStack(Draw.get_name('s'), title)
         for h in histos:
             s.Add(h, 'hist')
@@ -659,7 +659,7 @@ class Draw(object):
         h0 = histos[0]
         self.histo(s, show=False, save=False, draw_opt='nostack')
         format_histo(s, **prep_kw(dkw, x_tit=h0.GetXaxis().GetTitle(), y_tit=h0.GetYaxis().GetTitle(), **Draw.mode(1, y_off=h0.GetYaxis().GetTitleOffset())))
-        leg = self.legend(histos, leg_titles, 'l', w=w) if leg_titles else None
+        leg = self.legend(histos, leg_titles, ldraw, w=w) if leg_titles else None
         self.histo(s, **prep_kw(dkw, draw_opt='nostack', leg=leg, lm=get_last_canvas().GetLeftMargin()))
         return s
 
