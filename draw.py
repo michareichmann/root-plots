@@ -827,8 +827,9 @@ class Draw(object):
 # ----------------------------------------
 # region FORMATTING
 def format_histo(histo, name=None, title=None, x_tit=None, y_tit=None, z_tit=None, marker=None, color=None, line_color=None, line_style=None, markersize=None, x_off=None, y_off=None, z_off=None,
-                 lw=None, fill_color=None, fill_style=None, stats=None, tit_size=None, lab_size=None, xls=None, yls=None, l_off_y=None, l_off_x=None, draw_first=False, x_range=None, y_range=None,
-                 z_range=None, sumw2=None, do_marker=True, style=None, ndivx=None, ndivy=None, ncont=None, tick_size=None, t_ax_off=None, tform='%H:%M', center_y=False, center_x=False, yax_col=None,
+                 lw=None, fill_color=None, fill_style=None, stats=None, tit_size=None, lab_size=None, xls=None, yls=None, l_off_y=None, l_off_x=None, draw_first=False,
+                 x_range=None, xr=None, y_range=None, yr=None, z_range=None, zr=None,
+                 sumw2=None, do_marker=True, style=None, ndivx=None, ndivy=None, ncont=None, tick_size=None, t_ax_off=None, tform='%H:%M', center_y=False, center_x=False, yax_col=None,
                  normalise=None, pal=None, rebin=None, y_ticks=None, x_ticks=None, z_ticks=None, opacity=None, center_tit=None, **kwargs):
     _ = kwargs
     h = histo
@@ -870,9 +871,9 @@ def format_histo(histo, name=None, title=None, x_tit=None, y_tit=None, z_tit=Non
         pass
     # axes
     try:
-        x_args = [x_tit, x_off, tit_size, choose(center_tit, center_x), choose(xls,  lab_size), l_off_x, x_range, ndivx, choose(x_ticks, tick_size), ]
-        y_args = [y_tit, y_off, tit_size, choose(center_tit, center_y), choose(yls, lab_size), l_off_y, y_range, ndivy, choose(y_ticks, tick_size), yax_col]
-        z_args = [z_tit, z_off, tit_size, False, lab_size, None, z_range, None, choose(z_ticks, tick_size)]
+        x_args = [x_tit, x_off, tit_size, choose(center_tit, center_x), choose(xls,  lab_size), l_off_x, choose(xr, x_range), ndivx, choose(x_ticks, tick_size), ]
+        y_args = [y_tit, y_off, tit_size, choose(center_tit, center_y), choose(yls, lab_size), l_off_y, choose(yr, y_range), ndivy, choose(y_ticks, tick_size), yax_col]
+        z_args = [z_tit, z_off, tit_size, False, lab_size, None, choose(zr, z_range), None, choose(z_ticks, tick_size)]
         for i, name in enumerate(['X', 'Y', 'Z']):
             format_axis(getattr(h, f'Get{name}axis')(), h, *[x_args, y_args, z_args][i])
     except AttributeError or ReferenceError:
