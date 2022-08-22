@@ -165,12 +165,9 @@ class SaveDraw(Draw):
 
     def save_on_server(self, canvas, file_name, save=True, prnt=True):
         if self.ServerDir is not None and save:
-            self.open_file()
             p = Path(self.ServerDir, f'{basename(file_name)}.html')
-            if file_name in self.File.GetListOfKeys():
-                self.File.Delete(f'{file_name};1')
-            else:
-                html.create_root(p, title=p.parent.name, pal=53 if 'SignalMap' in file_name else 55, verbose=self.Verbose)
+            self.open_file(file_name)
+            html.create_root(p, title=p.parent.name, pal=53 if 'SignalMap' in file_name else 55, verbose=self.Verbose)
             self.File.cd()
             canvas.Write(file_name)
             self.File.Write()
