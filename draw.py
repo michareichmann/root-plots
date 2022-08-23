@@ -529,6 +529,8 @@ class Draw(object):
         if leg is not None:
             update_canvas()
             for i_leg in make_list(leg):
+                if callable(i_leg):
+                    i_leg = i_leg()
                 i_leg.Draw(choose(ldraw, 'same'))
                 th.GetListOfFunctions().Add(i_leg) if hasattr(th, 'GetListOfFunctions') else do_nothing()
         if info_leg:
