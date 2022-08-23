@@ -787,7 +787,7 @@ class Draw(object):
             x, y = array([[[v[0].n, v[0].s] if is_ufloat(v[0]) else append(v, zeros(2 - v.size)) for v in lst] for lst in d])
             x, ex, y, ey = [a.astype('d') for a in concatenate([x.T, y.T])]
             g = TGraphErrors(len(x), x, y, ex, ey)
-        format_histo(g, Draw.get_name('g'), **prep_kw(kwargs, marker=20, markersize=1))
+        format_histo(g, Draw.get_name('g'), **prep_kw(kwargs, marker=20, markersize=1.2))
         return Draw.add(g)
 
     @staticmethod
