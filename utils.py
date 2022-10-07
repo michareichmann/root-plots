@@ -127,8 +127,12 @@ def add_perr(u, e):
     return u * ufloat(1, e)
 
 
+def eff2u(eff):
+    return ufloat(eff[0], mean(eff[1:])) if eff.shape == (3,) else array([eff2u(e) for e in eff])
+
+
 def make_ufloat(n, s=0):
-    return array([ufloat(*v) for v in array([n, s]).T]) if is_iter(n) else n if is_ufloat(n) else ufloat(n, s)
+    return (eff2u(n) if len(n) == 3 and s == 0 else array([ufloat(*v) for v in array([n, s]).T])) if is_iter(n) else n if is_ufloat(n) else ufloat(n, s)
 
 
 def make_list(value):
