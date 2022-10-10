@@ -4,7 +4,6 @@
 # created on September 25th 2020 by M. Reichmann (remichae@phys.ethz.ch)
 # --------------------------------------------------------
 
-from os.path import basename, isdir
 from ROOT import TFile
 
 from . import html
@@ -16,13 +15,12 @@ class SaveDraw(Draw):
 
     Save = True
 
-    ServerMountDir = None
-    MountExists = None
+    ServerMountDir: Path = None
     Dummy = TFile(str(Draw.Dir.joinpath('dummy.root')), 'RECREATE')
 
     def __init__(self, analysis=None, results_dir=None, sub_dir=''):
         self.Analysis = analysis
-        super(SaveDraw, self).__init__(None if analysis is None else analysis.MainConfig.FilePath)
+        super(SaveDraw, self).__init__(self.find_config())
 
         self.File = None
 
@@ -30,36 +28,42 @@ class SaveDraw(Draw):
         SaveDraw.Save = Draw.Config.get_value('SAVE', 'save', default=False)
 
         # Results
-        self.ResultsDir = BaseDir.joinpath('Results', choose(results_dir, default='' if analysis is None else analysis.TCString))
+        self.ResultsDir = BaseDir.joinpath('results', results_dir)
         self.SubDir = str(sub_dir)
 
         # Server
         SaveDraw.ServerMountDir = Path(Draw.Config.get_value('SAVE', 'server mount directory', default=None)).expanduser()
-        SaveDraw.server_is_mounted(analysis)
-        self.ServerDir = self.load_server_save_dir()
 
     def __del__(self):
         remove_file(join(self.Dir, 'dummy.root'), prnt=False)
 
     # ----------------------------------------
     # region INIT
-    def load_server_save_dir(self):
-        if self.Analysis is not None and SaveDraw.MountExists and SaveDraw.ServerMountDir is not None:
-            if hasattr(self.Analysis, 'Selections'):
-                return ensure_dir(SaveDraw.ServerMountDir.joinpath('content', 'selections', str(self.Analysis)))
-            elif hasattr(self.Analysis, 'Ensemble') and 'RS' in str(self.Analysis.Ensemble):
-                return ensure_dir(SaveDraw.ServerMountDir.joinpath('content', self.SubDir))
-            if not hasattr(self.Analysis, 'DUT'):
-                return
-            run_string = f'RP-{self.Analysis.Ensemble.Name.lstrip("0").replace(".", "-")}' if hasattr(self.Analysis, 'RunPlan') else str(self.Analysis.Run.Number)
-            return SaveDraw.ServerMountDir.joinpath('content', 'diamonds', self.Analysis.DUT.Name, self.Analysis.TCString, run_string)
+    def find_config(self):
+        if hasattr(self.Analysis, 'Config'):
+            return self.Analysis.Config.FilePath
+        if hasattr(self.Analysis, 'MainConfig'):
+            return self.Analysis.MainConfig.FilePath
+
+    @property
+    def mount_exists(self):
+        x = False if SaveDraw.ServerMountDir is None else SaveDraw.ServerMountDir.joinpath('data').exists()
+        if not x:
+            warning(f'Diamond server is not mounted in {SaveDraw.ServerMountDir}')
+        return x
+
+    @property
+    def server_dir(self):
+        if self.Analysis is not None:
+            return SaveDraw.ServerMountDir.joinpath('content', self.Analysis.server_save_dir)
 
     def init_info(self):
-        return super().init_info() if self.Analysis is None else self.Analysis.InfoLegend(self)
+        return super().init_info() if self.Analysis is None or not hasattr(self.Analysis, 'InfoLegend') else self.Analysis.InfoLegend(self)
 
     @property
     def file_name(self):
-        return None if self.ServerDir is None else self.ServerDir.joinpath('plots.root')
+        d = self.server_dir
+        return None if d is None else d.joinpath('plots.root')
     # endregion INIT
     # ----------------------------------------
 
@@ -93,7 +97,7 @@ class SaveDraw(Draw):
         self.open_file(*exclude, prnt=False)
 
     def create_overview(self, x=4, y=3, redo=True):
-        if self.ServerDir is not None:
+        if self.server_dir is not None:
             html.create_tree(self.file_name.with_name('tree.html'))
             if not self.file_name.with_suffix('.html').exists() or redo:
                 html.create_root_overview(self.file_name, x, y, verbose=self.Verbose)
@@ -105,16 +109,6 @@ class SaveDraw(Draw):
         self.ResultsDir = join(Draw.Dir, 'Results', name)
     # endregion SET
     # ----------------------------------------
-
-    @staticmethod
-    def server_is_mounted(ana):
-        if ana is None:
-            return False
-        if SaveDraw.MountExists is not None:
-            return SaveDraw.MountExists
-        SaveDraw.MountExists = isdir(join(SaveDraw.ServerMountDir, 'data'))
-        if not SaveDraw.MountExists:
-            warning('Diamond server is not mounted in {}'.format(SaveDraw.ServerMountDir))
 
     # ----------------------------------------
     # region SAVE
@@ -161,11 +155,14 @@ class SaveDraw(Draw):
         Draw.set_show(True)
 
     def print_http(self, file_name, prnt=True, force_print=False):
-        info(join('https://diamond.ethz.ch', 'psi2', Path(self.ServerDir, file_name).relative_to(self.ServerMountDir)), prnt=force_print or prnt and Draw.Verbose and not Draw.Show)
+        prnt = force_print or prnt and Draw.Verbose and not Draw.Show
+        info(join('https://diamond.ethz.ch', self.ServerMountDir.name, Path(self.server_dir, file_name).relative_to(self.ServerMountDir)), prnt=prnt)
 
     def save_on_server(self, canvas, file_name, save=True, prnt=True):
-        if self.ServerDir is not None and save:
-            p = Path(self.ServerDir, f'{basename(file_name)}.html')
+        d = self.server_dir
+        if d is not None and save and self.mount_exists:
+            d.mkdir(parents=True, exist_ok=True)
+            p = d.joinpath(f'{Path(file_name).stem}.html')
             self.open_file(file_name)
             html.create_root(p, title=p.parent.name, pal=53 if 'SignalMap' in file_name else 55, verbose=self.Verbose)
             self.File.cd()
