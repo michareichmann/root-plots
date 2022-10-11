@@ -224,10 +224,11 @@ def ensure_dir(path):
     return path
 
 
-def remove_file(file_path, prnt=True):
-    if isfile(file_path):
-        warning('removing {}'.format(file_path), prnt=prnt)
-        remove(file_path)
+def remove_file(*file_path, string=None, warn=True):
+    for f in file_path:
+        if Path(f).exists():
+            warning(f'removing {choose(string, f)}', prnt=warn)
+            remove(f)
 
 
 def correlate(l1, l2):
