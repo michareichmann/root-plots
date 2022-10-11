@@ -35,7 +35,7 @@ class SaveDraw(Draw):
         SaveDraw.ServerMountDir = Path(Draw.Config.get_value('SAVE', 'server mount directory', default=None)).expanduser()
 
     def __del__(self):
-        remove_file(join(self.Dir, 'dummy.root'), prnt=False)
+        remove_file(join(self.Dir, 'dummy.root'), warn=False)
 
     # ----------------------------------------
     # region INIT
