@@ -350,7 +350,7 @@ class Draw(object):
         format_histo(line, line_color=line_color, lw=width, line_style=style, fill_color=fill_color, fill_style=fillstyle, opacity=opacity)
         if show:
             line.Draw('l')
-            line.Draw('f') if fill_color is not None or fillstyle is not None and fillstyle < 4000 else do_nothing()
+            line.Draw('f') if fill_color is not None or fillstyle is not None and 4000 > fillstyle > 0 else do_nothing()
         return Draw.add(line)
 
     @staticmethod
