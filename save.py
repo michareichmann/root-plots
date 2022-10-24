@@ -40,10 +40,10 @@ class SaveDraw(Draw):
     # ----------------------------------------
     # region INIT
     def find_config(self):
-        if hasattr(self.Analysis, 'Config'):
-            return self.Analysis.Config.FilePath
         if hasattr(self.Analysis, 'MainConfig'):
             return self.Analysis.MainConfig.FilePath
+        if hasattr(self.Analysis, 'Config'):
+            return self.Analysis.Config.FilePath
 
     @property
     def mount_exists(self):
