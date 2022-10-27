@@ -1225,7 +1225,7 @@ def get_3d_correlations(h, opt='yz', thresh=.25, err=True, z_supp=True):
     corr = []
     for ibin in range(1, h.GetNbinsX() + 1):
         h.GetXaxis().SetRange(ibin, ibin + 1)
-        corr.append(remove_low_stat_bins(h.Project3D(opt), thresh, of_max=True).GetCorrelationFactor())
+        corr.append(remove_low_stat_bins(h.Project3D(opt), thresh=thresh).GetCorrelationFactor())
     c = array(corr)
     return (get_x_bins(h, err)[c != 0], c[c != 0]) if z_supp else (get_x_bins(h, err), c)
 
@@ -1514,11 +1514,11 @@ def hide_axis(axis):
     axis.SetTitleOffset(99)
 
 
-def remove_low_stat_bins(h, q=.9, of_max=False):
+def remove_low_stat_bins(h, q=.9, thresh=None):
     if h.GetEntries() > 0:
         e = get_2d_bin_entries(h) if 'Profile' in h.ClassName() else get_2d_hist_vec(h, err=False, zero_supp=False, flat=False)
         e0 = e.flatten()
-        t = q * h.GetMaximum() if of_max else quantile(e0[e0 > 0], q)
+        t = quantile(e0[e0 > 0], q) if thresh is None else thresh * h.GetMaximum()
         e0[e0 < t] = 0
         (set_2d_entries if 'Profile' in h.ClassName() else set_2d_values)(h, e0.reshape(e.shape))
         update_canvas()
