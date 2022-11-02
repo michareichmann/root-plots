@@ -411,7 +411,7 @@ class Draw(object):
         return Draw.add(p)
 
     @staticmethod
-    def tpavetext(text, x1, x2, y1, y2, font=42, align=0, size=0, angle=0, margin=.05, color=1, opt='ndc'):
+    def tpavetext(text, x1, x2, y1, y2, font=42, align=0, size=0, angle=0, margin=.05, color=1, opt='ndc', show=True):
         p = TPaveText(x1, y1, x2, y2, opt)
         p.SetFillColor(0)
         p.SetFillStyle(0)
@@ -419,12 +419,12 @@ class Draw(object):
         p.SetMargin(margin)
         t = p.AddText(text)
         format_text(t, 'pave', align, color, size, angle, ndc=True, font=font)
-        p.Draw()
+        p.Draw() if show else do_nothing()
         return Draw.add(p)
 
     @staticmethod
-    def textbox(text, x=.5, y=.5, s=.05, font=42, color=1, fill_color=0, fill_style=1000, margin=.05, opacity=1, ndc=True, rounded=True, border=False):
-        t = Draw.tpavetext(text, x - s, x + s, y - s, y + s, font, color=color, margin=margin, opt=['', 'NDC'][ndc] + ['', 'ARC'][rounded])
+    def textbox(text, x=.5, y=.5, s=.05, font=42, color=1, fill_color=0, fill_style=1000, margin=.05, opacity=1, ndc=True, rounded=True, border=False, show=True):
+        t = Draw.tpavetext(text, x - s, x + s, y - s, y + s, font, color=color, margin=margin, opt=['', 'NDC'][ndc] + ['', 'ARC'][rounded], show=show)
         t.SetLineColorAlpha(1 if border else fill_color, 1 if border else 0)
         t.SetFillStyle(fill_style)
         t.SetFillColorAlpha(fill_color, opacity)
