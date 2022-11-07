@@ -9,7 +9,7 @@ from typing import Any
 
 from ROOT import TGraphErrors, TGaxis, TLatex, TGraphAsymmErrors, TCanvas, gStyle, TLegend, TArrow, TPad, TCutG, TLine, TPaveText, TPaveStats, TH1F, TEllipse, TColor, TProfile
 from ROOT import TProfile2D, TH2F, TH3F, THStack, TMultiGraph, TPie, gROOT, TF1
-from numpy import sign, linspace, ones, ceil, append, tile, absolute, rot90, flip, argsort, ndarray, arange, diff, pi, frombuffer, concatenate, where, roll, indices, array_split, column_stack
+from numpy import sign, linspace, ones, ceil, append, tile, absolute, rot90, flip, argsort, ndarray, arange, diff, pi, frombuffer, concatenate, where, roll, indices, array_split, column_stack, isnan
 from screeninfo import get_monitors, Monitor, common
 from scipy.stats import binned_statistic
 from warnings import catch_warnings, simplefilter
@@ -1040,7 +1040,8 @@ def find_range(values, lfac=.2, rfac=.2, q=.02, lq=None):
 
 def arr2coods(a):
     i = indices(a.shape)
-    return i[0].flatten(), i[1].flatten(), a.flatten()
+    cut = ~isnan(a).flatten()
+    return [v.flatten()[cut] for v in [i[0], i[1], a]]
 
 
 def bins_from_uvec(x):
