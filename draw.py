@@ -348,6 +348,7 @@ class Draw(object):
         s, x, y = (len(x) + 1, append(x, x[0]).astype('d'), append(y, y[0]).astype('d')) if closed else (len(x), array(x, 'd'), array(y, 'd'))
         line = TCutG(choose(name, Draw.get_name('poly')), s, x, y)
         format_histo(line, line_color=line_color, lw=width, line_style=style, fill_color=fill_color, fill_style=fillstyle, opacity=opacity)
+        line.SetFillStyle(Draw.Solid if fill_color else 0)
         if show:
             line.Draw('l')
             line.Draw('f') if fill_color is not None or fillstyle is not None and 4000 > fillstyle > 0 else do_nothing()
