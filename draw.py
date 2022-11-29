@@ -1265,11 +1265,16 @@ def duo_markers(i):
 
 
 def set_palette(*pal):
-    gStyle.SetPalette(*pal) if pal else do_nothing()
+    if len(pal):
+        gStyle.SetPalette(*pal)
+
+
+def n_pal(n):
+    return n + 1, append(0, Draw.get_colors(n)).astype('i')
 
 
 def set_n_palette(n):
-    set_palette(n + 1, append(0, Draw.get_colors(n)).astype('i'))
+    set_palette(*n_pal(n))
 
 
 def is_graph(h):
