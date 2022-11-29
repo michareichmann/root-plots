@@ -115,6 +115,7 @@ class Draw(object):
     FillColor = 871
     Font = 42
     Solid = 1001
+    Palette = 1
 
     DefaultStats = {'x2': None, 'y2': None, 'h': None, 'w': .3, 'entries': False, 'm': False, 'rms': False, 'all_stat': True, 'fit': False, 'center_x': False, 'center_y': False, 'form': None}
     Stats = {}
@@ -133,6 +134,7 @@ class Draw(object):
             Draw.Show = Draw.Config.get_value('SAVE', 'show', default=True)
             Draw.Monitor = Draw.find_monitor()
             Draw.Res = Draw.load_resolution()
+            Draw.Palette = Draw.Config.get_value('PLOTS', 'palette', default=1)
 
             Draw.setup()
             Draw.Info = Info(self)
@@ -210,7 +212,7 @@ class Draw(object):
     def setup():
         gStyle.SetLegendFont(Draw.Font)
         gStyle.SetOptTitle(Draw.Title)
-        gStyle.SetPalette(Draw.Config.get_value('PLOTS', 'palette', default=1))
+        gStyle.SetPalette(Draw.Palette)
         gStyle.SetNumberContours(Draw.Config.get_value('PLOTS', 'contours', default=20))
 
     @staticmethod
@@ -842,7 +844,7 @@ def format_histo(histo, name=None, title=None, x_tit=None, y_tit=None, z_tit=Non
         Draw.set_show(True)
     do(h.SetTitle, title)
     do(h.SetName, name)
-    set_palette(*make_list(pal) if pal is not None else [])
+    do(set_palette, pal)
     if normalise is not None:
         old_tit = choose(y_tit, h.GetYaxis().GetTitle())
         y_tit = old_tit.replace('Number', 'Frequency') if 'Number' in old_tit else old_tit
@@ -1264,17 +1266,17 @@ def duo_markers(i):
     return list(concatenate(array([full_, open_]).T).tolist())[i]
 
 
-def set_palette(*pal):
-    if len(pal):
-        gStyle.SetPalette(*pal)
+def set_palette(pal):
+    Draw.Palette = pal
+    gStyle.SetPalette(*[len(pal), array(pal).astype('i')] if is_iter(pal) and type(pal) is not str else [pal])
 
 
 def n_pal(n):
-    return n + 1, append(0, Draw.get_colors(n)).astype('i')
+    return append(0, Draw.get_colors(n)).astype('i')
 
 
 def set_n_palette(n):
-    set_palette(*n_pal(n))
+    set_palette(n_pal(n))
 
 
 def is_graph(h):

@@ -71,6 +71,7 @@ class SaveDraw(Draw):
     # region SET
     def open_file(self, *exclude, prnt=False):
         if self.File is None or exclude:
+            pal = Draw.Palette
             info('opening ROOT file on server ...', prnt=prnt)
             data = {}
             if self.file_name.exists():
@@ -79,6 +80,7 @@ class SaveDraw(Draw):
                 f0 = TFile(str(self.file_name), 'UPDATE')
                 data = {key.GetName(): f0.Get(key.GetName()) for key in f0.GetListOfKeys()}
             f = TFile(str(self.file_name), 'RECREATE')
+            set_palette(pal)
             for key, c in data.items():
                 if c and key not in exclude:
                     c.Write(key)
@@ -164,7 +166,8 @@ class SaveDraw(Draw):
             d.mkdir(parents=True, exist_ok=True)
             p = d.joinpath(f'{Path(file_name).stem}.html')
             self.open_file(file_name)
-            html.create_root(p, title=p.parent.name, pal=53 if 'SignalMap' in file_name else 55, verbose=self.Verbose)
+            print(Draw.Palette)
+            html.create_root(p, title=p.parent.name, pal=55 if is_iter(Draw.Palette) else Draw.Palette, verbose=self.Verbose)
             self.File.cd()
             canvas.Write(file_name)
             self.File.Write()
