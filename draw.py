@@ -1040,7 +1040,8 @@ def find_2d_bins(x, y, lfac=.2, rfac=.2, q=.02, n=1, lq=None, w=None, x0=None):
 
 
 def find_range(values, lfac=.2, rfac=.2, q=.02, lq=None):
-    return ax_range(*quantile(values[isfinite(values)], [choose(lq, q), 1 - q]), lfac, rfac)
+    q = quantile(values[isfinite(values)], [choose(lq, q), 1 - q])
+    return ax_range(*[min(values), max(values)] if q[0] == q[1] else q, lfac, rfac)
 
 
 def arr2coods(a):
