@@ -166,7 +166,6 @@ class SaveDraw(Draw):
             d.mkdir(parents=True, exist_ok=True)
             p = d.joinpath(f'{Path(file_name).stem}.html')
             self.open_file(file_name)
-            print(Draw.Palette)
             html.create_root(p, title=p.parent.name, pal=55 if is_iter(Draw.Palette) else Draw.Palette, verbose=self.Verbose)
             self.File.cd()
             canvas.Write(file_name)
