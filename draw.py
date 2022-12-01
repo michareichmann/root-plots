@@ -13,6 +13,7 @@ from numpy import sign, linspace, ones, ceil, append, tile, absolute, rot90, fli
 from screeninfo import get_monitors, Monitor, common
 from scipy.stats import binned_statistic
 from warnings import catch_warnings, simplefilter
+from functools import partial
 
 from .utils import *
 from .info import Info
@@ -619,12 +620,14 @@ class Draw(object):
         self.histo(p, **prep_kw(dkw,  rm=.17 if 'z' in draw_opt else None, stats=choose(get_kw('stats', dkw), set_statbox, entries=True, w=.25), draw_opt=draw_opt))
         return p
 
-    def histo_2d(self, x, y=None, binning=None, title='', q=.02, n=1, lf=.2, rf=.2, qz=None, z0=None, canvas=None, rot=None, mirror=None, centre=None, **dkw):
+    def histo_2d(self, x, y=None, binning=None, title='', q=.02, n=1, lf=.2, rf=.2, w=None, x0=None, x1=None, y0=None, y1=None, qz=None, z0=None, canvas=None, rot=None,
+                 mirror=None, centre=None, **dkw):
         if y is None:
             th = x
         else:
             x, y = array(x, dtype='d'), array(y, dtype='d')
-            th = TH2F(Draw.get_name('h2'), title, *sum([find_bins(i, q=q, n=n, rfac=rf, lfac=lf) for i in [x, y]], start=[]) if binning is None else binning)
+            b = partial(find_bins, q=q, n=n, rfac=rf, lfac=lf, w=w)
+            th = TH2F(Draw.get_name('h2'), title, *(b(x, x0=x0, x1=x1) + b(y, x0=y0, x1=y1)) if binning is None else binning)
             fill_hist(th, x, y)
         th = self.rotate_2d(th, rot)
         th = self.flip_2d(th, mirror)
@@ -1027,7 +1030,7 @@ def find_bins(values, lfac=.2, rfac=.2, q=.02, n=1, lq=None, w=None, x0=None, x1
     if all([values == values[0]]):
         return [3, array([-.15, -.05, .05, 0.15], 'd') * values[0] + values[0]]
     width, (xmin, xmax) = choose(w, bin_width(values) * n), find_range(values, lfac, rfac, q, lq) if r is None else array(r, 'd')
-    bins = arange(choose(x0, xmin), choose(x1, xmax) + width, width)
+    bins = arange(choose(x0, xmin), choose(x1, xmax) + width, width, dtype='d')
     return [bins.size - 1, bins]
 
 
