@@ -432,5 +432,5 @@ def add_asym_error(v, s0=0, s1=0):
 
 
 def download_file(server, loc, target, out=True):
-    cmd = f'rsync -aPv {server}:{loc} {target}'
+    cmd = f'rsync -aPvL {server}:{loc} {target}'
     return (check_call if out else check_output)(cmd, shell=True)
