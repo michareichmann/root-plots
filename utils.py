@@ -278,6 +278,9 @@ class Config(ConfigParser):
     def __repr__(self):
         return f'{self.__class__.__name__}: {join(*self.FilePath.parts[-2:])}' + (f' (section = {self.Section})' if hasattr(self, 'Section') and self.Section else '')
 
+    def options(self, section=None):
+        return super().options(choose(section, self.Section))
+
     def check_section(self, section):
         return section if section is None or section in self else critical(f'No section {section} in {self}')
 
