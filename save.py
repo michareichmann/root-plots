@@ -14,6 +14,7 @@ from .utils import BaseDir
 class SaveDraw(Draw):
 
     Save = True
+    SaveOnServer = True
 
     ServerMountDir: Path = None
     Dummy = TFile(str(Draw.Dir.joinpath('dummy.root')), 'RECREATE')
@@ -162,7 +163,7 @@ class SaveDraw(Draw):
 
     def save_on_server(self, canvas, file_name, save=True, prnt=True):
         d = self.server_dir
-        if d is not None and save and self.mount_exists:
+        if d is not None and save and SaveDraw.SaveOnServer and self.mount_exists:
             d.mkdir(parents=True, exist_ok=True)
             p = d.joinpath(f'{Path(file_name).stem}.html')
             self.open_file(file_name)
