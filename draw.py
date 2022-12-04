@@ -656,7 +656,7 @@ class Draw(object):
         th = self.distribution(x, binning, **prep_kw(dkw, rf=.5, lf=.5, n=2, x_tit=f'Normalised {h.GetYaxis().GetTitle()}'.split('[')[0] if hasattr(h, 'Class') else None))
         return th if ret_h else mean_sigma(x[x != 0])
 
-    def stack(self, histos, title='', leg_titles=None, scale=False, fill=None, ldraw='l', w=.2, **dkw):
+    def stack(self, histos, title='', leg_titles=None, leg_head=None, scale=False, fill=None, ldraw='l', w=.2, **dkw):
         s = THStack(Draw.get_name('s'), title)
         for h in histos:
             s.Add(h, 'hist')
@@ -667,7 +667,7 @@ class Draw(object):
         h0 = histos[0]
         self.histo(s, show=False, save=False, draw_opt='nostack')
         format_histo(s, **prep_kw(dkw, x_tit=h0.GetXaxis().GetTitle(), y_tit=h0.GetYaxis().GetTitle(), **Draw.mode(1, y_off=h0.GetYaxis().GetTitleOffset())))
-        leg = self.legend(histos, leg_titles, ldraw, w=w) if leg_titles is not None else None
+        leg = self.legend(histos, leg_titles, ldraw, header=leg_head, w=w) if leg_titles is not None else None
         self.histo(s, **prep_kw(dkw, draw_opt='nostack', leg=leg, lm=get_last_canvas().GetLeftMargin()))
         return s
 
@@ -803,7 +803,8 @@ class Draw(object):
         return Draw.make_tgraph(x[cut], y[cut], title=p.GetTitle(), x_tit=p.GetXaxis().GetTitle(), y_tit=p.GetYaxis().GetTitle())
 
     @staticmethod
-    def make_legend(x2=None, y2=None, w=.25, nentries=2, scale=1, ts=None, d=.01, y1=None, x1=None, clean=False, margin=.25, cols=None, fix=False, bottom=False, left=False, c=None, **kwargs):
+    def make_legend(x2=None, y2=None, w=.25, nentries=2, scale=1, ts=None, d=.01, y1=None, x1=None, header=None, clean=False, margin=.25, cols=None, fix=False, bottom=False, left=False, c=None,
+                    **kwargs):
         _ = kwargs
         use_margins = y2 is None
         h = nentries // choose(cols, 1) * .06 * scale
@@ -816,6 +817,7 @@ class Draw(object):
         leg = TLegend(x1, max(y1, 0), x1 + w, min(y1 + h, 1))
         leg.SetName(Draw.get_name('l'))
         do(leg.SetTextSize, ts)
+        leg.SetHeader(header, 'c') if header is not None else do_nothing()
         leg.SetTextFont(Draw.Font)
         leg.SetMargin(margin)
         do(leg.SetNColumns, cols)
