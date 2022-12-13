@@ -26,7 +26,11 @@ def unit(*txt, custom=False):
 
 
 def si(*v, fmt='.1f', unt=None):
-    return num(*v, fmt=fmt) if unt is None else [f('SI', f'{i:{fmt}}', f'\\{unt}').replace('/', '') for i in v]
+    return qty(*v, fmt=fmt, unt=unt)
+
+
+def qty(*v, fmt='.1f', unt=None):
+    return num(*v, fmt=fmt) if unt is None else [f('qty', f'{i:{fmt}}', f'\\{unt}').replace('/', '') for i in v]
 
 
 def si_2err(*v, fmt='.1f', unt=None):
@@ -42,7 +46,11 @@ def num_2err(v, fmt='.1f'):
 
 
 def si_range(v0, v1, fmt='.0f', unt=None):
-    return num_range(v0, v1, fmt) if unt is None else f('SIrange', f'{v0:{fmt}}', f'{float(v1):{fmt}}', f'\\{unt}')
+    return qty_range(v0, v1, fmt, unt)
+
+
+def qty_range(v0, v1, fmt='.0f', unt=None):
+    return num_range(v0, v1, fmt) if unt is None else f('qtyrange', f'{v0:{fmt}}', f'{float(v1):{fmt}}', f'\\{unt}')
 
 
 def num_range(v0, v1, fmt='.0f'):
