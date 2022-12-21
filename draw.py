@@ -1180,13 +1180,6 @@ def get_h_args(h):
     return get_graph_x(h) if 'Graph' in h.ClassName() else get_hist_args(h)
 
 
-def get_2d_hist_vec(h, err=True, flat=True, zero_supp=True):
-    xbins, ybins = range(1, h.GetNbinsX() + 1), range(1, h.GetNbinsY() + 1)
-    values = array([ufloat(h.GetBinContent(xbin, ybin), h.GetBinError(xbin, ybin)) for ybin in ybins for xbin in xbins])
-    values = values if err else array([v.n for v in values])
-    return (values[values != 0] if zero_supp else values) if flat else values.reshape(len(ybins), len(xbins))
-
-
 def get_x_bins(h, err=True):
     return get_hist_args(h, err, axis='X')
 
@@ -1216,11 +1209,20 @@ def get_2d_bin_entries(h, flat=False):
 
 
 def get_2d_args(h):
-    return array([[getattr(h, 'Get{}axis'.format(ax))().GetBinCenter(ibin) for ibin in range(1, getattr(h, 'GetNbins{}'.format(ax))() + 1)] for ax in ['X', 'Y']])
+    return [array([getattr(h, f'Get{ax}axis')().GetBinCenter(ibin) for ibin in range(1, getattr(h, f'GetNbins{ax}')() + 1)]) for ax in ['X', 'Y']]
 
 
-def get_2d_vecs(h, err=True, flat=False):
-    return get_2d_args(h), get_2d_hist_vec(h, err, flat)
+def get_2d_vecs(h, err=True, flat=False, z_sup=True):
+    (x, y), z_ = get_2d_args(h), get_2d_hist_vec(h, err, flat=False, z_sup=False)
+    cut = where(z_ != 0) if z_sup else [..., ...]
+    return x[cut[1]], y[cut[0]], z_[cut].flatten() if flat else z_[cut]
+
+
+def get_2d_hist_vec(h, err=True, flat=True, z_sup=True):
+    xbins, ybins = range(1, h.GetNbinsX() + 1), range(1, h.GetNbinsY() + 1)
+    values = array([ufloat(h.GetBinContent(xbin, ybin), h.GetBinError(xbin, ybin)) for ybin in ybins for xbin in xbins])
+    values = values if err else array([v.n for v in values])
+    return (values[values != 0] if z_sup else values) if flat else values.reshape(len(ybins), len(xbins))
 
 
 def get_3d_profiles(h, opt, err=True):
@@ -1343,7 +1345,7 @@ def ax_range(low: Any = None, high=None, fl=0., fh=0., h=None, rnd=False, thresh
 
 def find_z_range(h, q=None, z0=None):
     if q is not None:
-        x = get_2d_hist_vec(h, err=False, flat=True, zero_supp=False)
+        x = get_2d_hist_vec(h, err=False, flat=True, z_sup=False)
         zmin, zmax = choose(z0, quantile, a=x, q=1 - q), quantile(x, q)
         return [zmin, zmax]
 
@@ -1533,7 +1535,7 @@ def hide_axis(axis):
 
 def remove_low_stat_bins(h, q=.9, thresh=None):
     if h.GetEntries() > 0:
-        e = get_2d_bin_entries(h) if 'Profile' in h.ClassName() else get_2d_hist_vec(h, err=False, zero_supp=False, flat=False)
+        e = get_2d_bin_entries(h) if 'Profile' in h.ClassName() else get_2d_hist_vec(h, err=False, z_sup=False, flat=False)
         e0 = e.flatten()
         t = quantile(e0[e0 > 0], q) if thresh is None else thresh * h.GetMaximum()
         e0[e0 < t] = 0
