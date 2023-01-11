@@ -175,12 +175,14 @@ class Draw(object):
     # region INIT
     @staticmethod
     def find_monitor():
-        try:
-            monitors = sorted(get_monitors(), key=lambda mon: mon.x)
-            imon = Draw.Config.get_value('DRAW', 'monitor number', int, default=0)
-            return monitors[imon if imon < len(monitors) else 0]
-        except (common.ScreenInfoError, IndexError):
-            return Monitor(0, 0, 1366, 768)
+        if Draw.Config.get_value('MONITOR', 'load', default=True):
+            try:
+                monitors = sorted(get_monitors(), key=lambda mon: mon.x)
+                imon = Draw.Config.get_value('MONITOR', 'number', default=0)
+                return monitors[imon if imon < len(monitors) else 0]
+            except (common.ScreenInfoError, IndexError):
+                pass
+        return Monitor(0, 0, *Draw.Config.get_list('MONITOR', 'default'))
 
     @staticmethod
     def load_resolution():
