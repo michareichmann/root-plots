@@ -15,8 +15,8 @@ from numpy import sign, linspace, ones, ceil, append, tile, absolute, rot90, fli
 from scipy.stats import binned_statistic
 from screeninfo import get_monitors, Monitor, common
 
-import binning as bins
-from binning import increase_range, quantile
+import plotting.binning as bins
+from .binning import increase_range, quantile
 from .info import Info
 from .utils import *
 
