@@ -4,22 +4,21 @@
 # created on February 15th 2018 by M. Reichmann (remichae@phys.ethz.ch)
 # --------------------------------------------------------
 
+from functools import partial
 from inspect import signature
 from typing import Any
+from warnings import catch_warnings, simplefilter
 
 from ROOT import TGraphErrors, TGaxis, TLatex, TGraphAsymmErrors, TCanvas, gStyle, TLegend, TArrow, TPad, TCutG, TLine, TPaveText, TPaveStats, TH1F, TEllipse, TColor, TProfile
 from ROOT import TProfile2D, TH2F, TH3F, THStack, TMultiGraph, TPie, gROOT, TF1
-from numpy import sign, linspace, ones, ceil, append, tile, absolute, rot90, flip, argsort, ndarray, arange, diff, pi, frombuffer, concatenate, where, roll, indices, array_split, column_stack, isnan
-from screeninfo import get_monitors, Monitor, common
+from numpy import sign, linspace, ones, ceil, append, tile, absolute, rot90, flip, argsort, ndarray, arange, diff, pi, concatenate, where, roll, indices, array_split, isnan, frombuffer, column_stack
 from scipy.stats import binned_statistic
-from warnings import catch_warnings, simplefilter
-from functools import partial
+from screeninfo import get_monitors, Monitor, common
 
-from .utils import *
+import binning as bins
+from binning import increase_range, quantile
 from .info import Info
-
-
-# TODO: add binning class
+from .utils import *
 
 
 class FitRes(ndarray):
@@ -561,7 +560,7 @@ class Draw(object):
         if is_root_object(x):
             th = x
         else:
-            th = TH1F(Draw.get_name('h'), title, *choose(binning, find_bins, values=x, q=q, n=n, lfac=lf, rfac=rf, r=r, w=w, x0=x0, x1=x1))
+            th = TH1F(Draw.get_name('h'), title, *choose(binning, bins.find, values=x, q=q, n=n, lfac=lf, rfac=rf, r=r, w=w, x0=x0, x1=x1))
             fill_hist(th, x)
         format_histo(th, **prep_kw(kwargs, **Draw.mode(), fill_color=Draw.FillColor, y_tit='Number of Entries' if not th.GetYaxis().GetTitle() else None))
         self.histo(th, **prep_kw(kwargs, stats=None))
@@ -599,7 +598,7 @@ class Draw(object):
             p = x
         else:
             x, y = array(x, dtype='d'), array(y, dtype='d')
-            p = TProfile(Draw.get_name('p'), title, *choose(binning, find_bins, lfac=lf, rfac=rf, values=x, q=q, w=w, x0=x0))
+            p = TProfile(Draw.get_name('p'), title, *choose(binning, bins.find, lfac=lf, rfac=rf, values=x, q=q, w=w, x0=x0))
             fill_hist(p, x, y)
         p = self.make_graph_from_profile(p) if graph else p
         format_histo(p, **prep_kw(dkw, **Draw.mode(), fill_color=Draw.FillColor))
@@ -611,7 +610,7 @@ class Draw(object):
             p = x
         else:
             x, y, zz = arr2coods(x) if y is None else (x, y, zz)
-            dflt_bins = find_bins(x) + find_bins(y) if binning is None else None
+            dflt_bins = bins.find(x) + bins.find(y) if binning is None else None
             p = TProfile2D(Draw.get_name('p2'), title, *choose(binning, dflt_bins))
             fill_hist(p, x, y, uarr2n(zz))
         p = self.rotate_2d(p, rot)
@@ -628,7 +627,7 @@ class Draw(object):
             th = x
         else:
             x, y = array(x, dtype='d'), array(y, dtype='d')
-            b = partial(find_bins, q=q, n=n, rfac=rf, lfac=lf, w=w)
+            b = partial(bins.find, q=q, n=n, rfac=rf, lfac=lf, w=w)
             th = TH2F(Draw.get_name('h2'), title, *(b(x, x0=x0, x1=x1) + b(y, x0=y0, x1=y1)) if binning is None else binning)
             fill_hist(th, x, y)
         th = self.rotate_2d(th, rot)
@@ -640,7 +639,7 @@ class Draw(object):
         return th
 
     def histo_3d(self, x, y, zz, binning=None, title='', q=.02, **dkw):
-        th = TH3F(Draw.get_name('h3'), title, *find_bins(x, q=q) + find_bins(y, q=q) + find_bins(zz, q=q) if binning is None else binning)
+        th = TH3F(Draw.get_name('h3'), title, *bins.find(x, q=q) + bins.find(y, q=q) + bins.find(zz, q=q) if binning is None else binning)
         fill_hist(th, x, y, zz)
         format_histo(th, **prep_kw(dkw))
         self.histo(th, **prep_kw(dkw, draw_opt='colz', show=False))
@@ -648,11 +647,11 @@ class Draw(object):
 
     def efficiency(self, x, e, binning=None, q=.02, w=None, x0=None, **kwargs):
         p = self.profile(x, e, binning, q=q, w=w, x0=x0, show=False)
-        x, y = get_hist_args(p), array([calc_eff(p0 * n, n) if n else [-1, 0, 0] for p0, n in [[p.GetBinContent(ibin), p.GetBinEntries(ibin)] for ibin in range(1, p.GetNbinsX() + 1)]])
+        x, y = bins.hx(p), array([calc_eff(p0 * n, n) if n else [-1, 0, 0] for p0, n in [[p.GetBinContent(ibin), p.GetBinEntries(ibin)] for ibin in range(1, p.GetNbinsX() + 1)]])
         return self.graph(x[y[:, 0] != -1], y[y[:, 0] != -1], **prep_kw(kwargs, title='Efficiency', y_tit='Efficiency [%]'))
 
     def pull(self, h, binning=None, ret_h=False, **dkw):
-        x = h if type(h) in [list, ndarray] else get_h_values(h)
+        x = h if type(h) in [list, ndarray] else h_values(h)
         m, s = mean_sigma(x)
         x = uarr2n((x - m) / s)
         th = self.distribution(x, binning, **prep_kw(dkw, rf=.5, lf=.5, n=2, x_tit=f'Normalised {h.GetYaxis().GetTitle()}'.split('[')[0] if hasattr(h, 'Class') else None))
@@ -684,7 +683,7 @@ class Draw(object):
                 color = None if get_kw('color', dkw, 2) is None else self.get_color(len(graphs))
                 marker = get_kw('marker', dkw) if 'marker' in dkw else markers(i)
                 format_histo(g, **prep_kw(dkw, marker=marker, color=color, stats=False))
-        y_range = ax_range(get_graph_y(graphs, err=False), 0, .3, .6)
+        y_range = ax_range(graph_y(graphs, err=False), 0, .3, .6)
         self.histo(m, show=False, save=False, canvas=get_kw('canvas', dkw, None))
         format_histo(m, **prep_kw(dkw, **Draw.mode(1, y_off=g0.GetYaxis().GetTitleOffset()), y_tit=g0.GetYaxis().GetTitle(), y_range=y_range, x_tit=choose('', None, bin_labels)))
         set_bin_labels(m, bin_labels)
@@ -704,10 +703,10 @@ class Draw(object):
         return pie
 
     def prof2hist(self, p):
-        bins = get_2d_bins(p)
-        h, nx, ny = self.histo_2d([], [], bins, show=False), bins[0], bins[2]
+        b = bins.h2d(p)
+        h, nx, ny = self.histo_2d([], [], b, show=False), b[0], b[2]
         xax, yax = p.GetXaxis(), p.GetYaxis()
-        [h.Fill(xax.GetBinCenter(ix), yax.GetBinCenter(iy)) for ix in range(1, nx + 2) for iy in range(1, ny + 2) for _ in range(_get_2d_bin_entries(p, ix, iy, nx))]
+        [h.Fill(xax.GetBinCenter(ix), yax.GetBinCenter(iy)) for ix in range(1, nx + 2) for iy in range(1, ny + 2) for _ in range(bins.single_entries_2d(p, ix, iy, nx))]
         return h
 
     @staticmethod
@@ -718,7 +717,7 @@ class Draw(object):
     @staticmethod
     def bin_numbers(h, show=True):
         if show:
-            x, y = get_2d_bins(h, arr=True)
+            x, y = bins.h2d(h, arr=True)
             dx, dy = diff(x)[0] / 2, diff(y)[0] / 2
             [Draw.tlatex(x[m] + dx, y[n] + dy, str((x.size - 1) * n + m)) for n in range(y.size - 1) for m in range(x.size - 1)]
 
@@ -735,11 +734,11 @@ class Draw(object):
     # ----------------------------------------
     # region OPERATIONS
     def operate(self, h, f, *args, **kwargs):
-        h0, h = h, self.prof2d([], [], [], get_2d_bins(h), show=False)
+        h0, h = h, self.prof2d([], [], [], bins.h2d(h), show=False)
         prof = 'Profile' in h0.ClassName()
-        x, n = get_2d_hist_vec(h0, err=False, flat=False), get_2d_bin_entries(h0) if prof else 1
-        set_2d_values(h, f(x * n, *args, **kwargs))
-        set_2d_entries(h, f(n, *args, **kwargs)) if prof else do_nothing()
+        x, n = hist_values_2d(h0, err=False, flat=False), bins.entries_2d(h0) if prof else 1
+        bins.set_2d_values(h, f(x * n, *args, **kwargs))
+        bins.set_2d_entries(h, f(n, *args, **kwargs)) if prof else do_nothing()
         h.SetEntries(int(h0.GetEntries()))
         format_histo(h, z_range=[h0.GetMinimum(), h0.GetMaximum()], **{f'{i}_tit': getattr(h0, f'Get{i.title()}axis')().GetTitle() for i in ['x', 'y', 'z']}, ncont=h0.GetContour())
         return h
@@ -755,8 +754,8 @@ class Draw(object):
     # ----------------------------------------
     # region CREATE
     @staticmethod
-    def make_histo(title, bins):
-        h = TH1F(Draw.get_name('h'), title, *bins)
+    def make_histo(title, binning):
+        h = TH1F(Draw.get_name('h'), title, *binning)
         return Draw.add(h)
 
     @staticmethod
@@ -788,7 +787,7 @@ class Draw(object):
             return warning('Arrays have different size!')
         d = [[make_list(i) for i in lst] for lst in [x, y]]  # make all entries arrays
         if any([i.size == 3 for lst in d for i in lst]):
-            x, y = array(array([[[v[0].n, v[0].s, v[0].s] if is_ufloat(v[0]) else append(v, zeros(3 - v.size)) for v in lst] for lst in d]).tolist())
+            x, y = array(array([[[v[0].n, v[0].s, v[0].s] if is_ufloat(v[0]) else append(v, zeros(3 - v.size)) for v in lst] for lst in d]).tolist())  # noqa
             x, ex1, ex2, y, ey1, ey2 = [a.astype('d') for a in concatenate([x.T, y.T])]
             g = TGraphAsymmErrors(len(x), x, y, ex1, ex2, ey1, ey2)
         else:
@@ -800,7 +799,7 @@ class Draw(object):
 
     @staticmethod
     def make_graph_from_profile(p, nmin=2):
-        (x, y), n = get_hist_vecs(p), get_bin_entries(p)
+        (x, y), n = hist_xy(p), bins.entries(p)
         cut = (y != 0) & (n >= nmin)
         return Draw.make_tgraph(x[cut], y[cut], title=p.GetTitle(), x_tit=p.GetXaxis().GetTitle(), y_tit=p.GetYaxis().GetTitle())
 
@@ -1030,43 +1029,10 @@ def set_2d_ranges(h, dx, dy):
     format_histo(h, x_range=[xmid - dx, xmid + dx], y_range=[ymid - dy, ymid + dx])
 
 
-def find_bins(values, lfac=.2, rfac=.2, q=.02, n=1, lq=None, w=None, x0=None, x1=None, r=None):
-    if all([values == values[0]]):
-        return [3, array([-.15, -.05, .05, 0.15], 'd') * values[0] + values[0]]
-    width, (xmin, xmax) = choose(w, bin_width(values) * n), find_range(values, lfac, rfac, q, lq) if r is None else array(r, 'd')
-    bins = arange(choose(x0, xmin), choose(x1, xmax) + width, width, dtype='d')
-    return [bins.size - 1, bins]
-
-
-def nbins(x):
-    return int((x.max() - x.min()) / bin_width(x))
-
-
-def find_2d_bins(x, y, lfac=.2, rfac=.2, q=.02, n=1, lq=None, w=None, x0=None):
-    return sum([find_bins(i, lfac, rfac, q, n, lq, w, x0) for i in [x, y]], start=[])
-
-
-def find_range(values, lfac=.2, rfac=.2, q=.02, lq=None):
-    q = quantile(values[isfinite(values)], [choose(lq, q), 1 - q])
-    return ax_range(*[min(values), max(values)] if q[0] == q[1] else q, lfac, rfac)
-
-
 def arr2coods(a):
     i = indices(a.shape)
     cut = ~isnan(a).flatten()
     return [v.flatten()[cut] for v in [i[0], i[1], a]]
-
-
-def bins_from_uvec(x):
-    return [x.size, append([i.n - i.s for i in x], x[-1].n + x[-1].s).astype('d')]
-
-
-def bins_from_vec(x, centre=False):
-    if centre:
-        w0 = (x[1] - x[0])
-        x = append(x, x[-1] + w0)
-        x -= append(w0 / 2, diff(x) / 2)
-    return [x.size - 1, x]
 
 
 def fix_chi2(g, prec=.01, show=True):
@@ -1086,6 +1052,69 @@ def fix_chi2(g, prec=.01, show=True):
 
 def make_darray(values):
     return array([v.n for v in values] if is_ufloat(values[0]) else values, dtype='d')
+
+
+# ----------------------------------------
+# region GRAPH VALUES
+def graph_values(g, m, err=False, as_u=True):
+    if is_iter(g):
+        return array([v for ig in g for v in graph_values(ig, m, err)])
+    v = frombuffer(getattr(g, f'Get{m}')())
+    if 'Asym' in g.ClassName() and err:
+        e = array([frombuffer(getattr(g, f'GetE{m}{att}')(), count=g.GetN()) for att in ['low', 'high']]).T
+        return make_ufloat(v, mean(e, axis=1)) if as_u else column_stack([v, e])
+    elif 'Error' in g.ClassName() and err:
+        e = frombuffer(getattr(g, f'GetE{m}')())
+        return make_ufloat(v, e) if as_u else array([v, e]).T
+    return v
+
+
+def graph_xy(g, err=True, as_u=True):
+    return graph_x(g, err, as_u), graph_y(g, err, as_u)
+
+
+def graph_x(g, err=True, as_u=True):
+    return graph_values(g, 'X', err, as_u)
+
+
+def graph_y(g, err=True, as_u=True):
+    return graph_values(g, 'Y', err, as_u)
+# endregion GRAPH VALUES
+# ----------------------------------------
+
+
+# ----------------------------------------
+# region HISTOGRAM VALUES
+def hist_values(h, err=True):
+    return array([ufloat(h.GetBinContent(i), h.GetBinError(i)) if err else h.GetBinContent(i) for i in bins.hn(h)])
+
+
+def hist_xy(h, err=True, raw=False):
+    if type(h) in [ndarray, list]:
+        return array([tup for ip in h for tup in array(hist_xy(ip, err, raw)).T]).T
+    return bins.from_hist(h, err, raw), hist_values(h, err)
+
+
+def hist_values_2d(h, err=True, flat=True, z_sup=True):
+    xbins, ybins = bins.hn(h, axis='X'), bins.hn(h, axis='Y')
+    values = array([ufloat(h.GetBinContent(xbin, ybin), h.GetBinError(xbin, ybin)) for ybin in ybins for xbin in xbins])
+    values = values if err else array([v.n for v in values])
+    return (values[values != 0] if z_sup else values) if flat else values.reshape(len(ybins), len(xbins))
+
+def hist_xyz(h, err=True, flat=False, z_sup=True):
+    (x, y), z_ = bins.h2d(h), hist_values_2d(h, err, flat=False, z_sup=False)
+    cut = where(z_ != 0) if z_sup else [..., ...]
+    return x[cut[1]], y[cut[0]], z_[cut].flatten() if flat else z_[cut]
+# endregion HISTOGRAM VALUES
+# ----------------------------------------
+
+
+def h_values(h):
+    return graph_y(h) if 'Graph' in h.ClassName() else hist_values(h)
+
+
+def h_args(h):
+    return graph_x(h) if 'Graph' in h.ClassName() else bins.from_hist(h)
 
 
 def set_bin_labels(g, labels):
@@ -1112,119 +1141,20 @@ def set_titles(status=True):
     gStyle.SetOptTitle(status)
 
 
-def get_graph_vecs(g, err=True, as_u=True):
-    return get_graph_x(g, err, as_u), get_graph_y(g, err, as_u)
-
-
-def graph_vec(g, m, err=False, as_u=True):
-    if is_iter(g):
-        return array([v for ig in g for v in graph_vec(ig, m, err)])
-    v = frombuffer(getattr(g, f'Get{m}')())
-    if 'Asym' in g.ClassName() and err:
-        e = array([frombuffer(getattr(g, f'GetE{m}{att}')(), count=g.GetN()) for att in ['low', 'high']]).T
-        return make_ufloat(v, mean(e, axis=1)) if as_u else column_stack([v, e])
-    elif 'Error' in g.ClassName() and err:
-        e = frombuffer(getattr(g, f'GetE{m}')())
-        return make_ufloat(v, e) if as_u else array([v, e]).T
-    return v
-
-
-def get_graph_x(g, err=True, as_u=True):
-    return graph_vec(g, 'X', err, as_u)
-
-
-def get_graph_y(g, err=True, as_u=True):
-    return graph_vec(g, 'Y', err, as_u)
-
-
 def shift_graph(g, ox=0, oy=0):
     if is_iter(g):
         return [shift_graph(ig, ox, oy) for ig in g]
     if 'Asym' in g.ClassName():
-        x, y = get_graph_vecs(g, as_u=False)
+        x, y = graph_xy(g, as_u=False)
         for i in range(x.shape[0]):
             g.SetPoint(i, x[i][0] + ox, y[i][0] + oy)
             g.SetPointError(i, *x[i][1:], *y[i][1:])
     else:
-        for i, (x, y) in enumerate(array(get_graph_vecs(g)).T + [ox, oy]):
+        for i, (x, y) in enumerate(array(graph_xy(g)).T + [ox, oy]):
             g.SetPoint(i, x.n, y.n)
             if 'Error' in g.ClassName():
                 g.SetPointError(i, x.s, y.s)
     return g
-
-
-def get_hist_vec(p, err=True):
-    return array([ufloat(p.GetBinContent(ibin), p.GetBinError(ibin)) if err else p.GetBinContent(ibin) for ibin in range(1, p.GetNbinsX() + 1)])
-
-
-def get_hist_args(h, err=True, raw=False, axis='X'):
-    ax = getattr(h, f'Get{axis.title()}axis')()
-    if raw:
-        return array([ax.GetBinLowEdge(i) for i in range(1, ax.GetNbins() + 2)], 'd')
-    return array([ufloat(ax.GetBinCenter(ibin), ax.GetBinWidth(ibin) / 2) if err else ax.GetBinCenter(ibin) for ibin in range(1, ax.GetNbins() + 1)])
-
-
-def get_hist_vecs(p, err=True, raw=False):
-    if type(p) in [ndarray, list]:
-        return array([tup for ip in p for tup in array(get_hist_vecs(ip, err, raw)).T]).T
-    return get_hist_args(p, err, raw), get_hist_vec(p, err)
-
-
-def get_bin_entries(p):
-    return array([p.GetBinEntries(i) for i in range(1, p.GetNbinsX() + 1)], 'i')
-
-
-def get_h_values(h):
-    return get_graph_y(h) if 'Graph' in h.ClassName() else get_hist_vec(h)
-
-
-def get_h_args(h):
-    return get_graph_x(h) if 'Graph' in h.ClassName() else get_hist_args(h)
-
-
-def get_x_bins(h, err=True):
-    return get_hist_args(h, err, axis='X')
-
-
-def get_2d_bins(h, arr=False):
-    x, y = [get_hist_args(h, raw=True, axis=ax) for ax in ['X', 'Y']]
-    return [x, y] if arr else [x.size - 1, x, y.size - 1, y]
-
-
-def set_2d_values(h, arr):
-    [h.SetBinContent(ix + 1, iy + 1, arr[iy, ix]) for ix in range(arr.shape[1]) for iy in range(arr.shape[0])]
-
-
-def set_2d_entries(h, arr):
-    ny, nx = arr.shape
-    [h.SetBinEntries((nx + 2) * (iy + 1) + (ix + 1), arr[iy, ix]) for ix in range(nx) for iy in range(ny)]
-
-
-def _get_2d_bin_entries(h, ix, iy, nx):
-    return int(h.GetBinEntries((nx + 2) * iy + ix))
-
-
-def get_2d_bin_entries(h, flat=False):
-    nx, ny = h.GetNbinsX(), h.GetNbinsY()
-    entries = array([[_get_2d_bin_entries(h, ix, iy, nx) for ix in range(1, nx + 1)] for iy in range(1, ny + 1)])
-    return entries.flatten() if flat else entries
-
-
-def get_2d_args(h):
-    return [array([getattr(h, f'Get{ax}axis')().GetBinCenter(ibin) for ibin in range(1, getattr(h, f'GetNbins{ax}')() + 1)]) for ax in ['X', 'Y']]
-
-
-def get_2d_vecs(h, err=True, flat=False, z_sup=True):
-    (x, y), z_ = get_2d_args(h), get_2d_hist_vec(h, err, flat=False, z_sup=False)
-    cut = where(z_ != 0) if z_sup else [..., ...]
-    return x[cut[1]], y[cut[0]], z_[cut].flatten() if flat else z_[cut]
-
-
-def get_2d_hist_vec(h, err=True, flat=True, z_sup=True):
-    xbins, ybins = range(1, h.GetNbinsX() + 1), range(1, h.GetNbinsY() + 1)
-    values = array([ufloat(h.GetBinContent(xbin, ybin), h.GetBinError(xbin, ybin)) for ybin in ybins for xbin in xbins])
-    values = values if err else array([v.n for v in values])
-    return (values[values != 0] if z_sup else values) if flat else values.reshape(len(ybins), len(xbins))
 
 
 def get_3d_profiles(h, opt, err=True):
@@ -1234,7 +1164,7 @@ def get_3d_profiles(h, opt, err=True):
         p = h.Project3D(opt)
         px.append(deepcopy(p.ProfileX()))
         py.append(deepcopy(p.ProfileY()))
-    return get_x_bins(h, err), px, py
+    return bins.hx(h, err), px, py
 
 
 def get_3d_correlations(h, opt='yz', thresh=.25, err=True, z_supp=True):
@@ -1243,15 +1173,11 @@ def get_3d_correlations(h, opt='yz', thresh=.25, err=True, z_supp=True):
         h.GetXaxis().SetRange(ibin, ibin + 1)
         corr.append(remove_low_stat_bins(h.Project3D(opt), thresh=thresh).GetCorrelationFactor())
     c = array(corr)
-    return (get_x_bins(h, err)[c != 0], c[c != 0]) if z_supp else (get_x_bins(h, err), c)
-
-
-def get_h_entries(h):
-    return array([h.GetBinEntries(ibin) for ibin in range(1, h.GetNbinsX() + 1)])
+    return (bins.hx(h, err)[c != 0], c[c != 0]) if z_supp else (bins.hx(h, err), c)
 
 
 def scale_graph(gr, scale=None, val=1, to_low_flux=False):
-    x, y = get_graph_vecs(gr)
+    x, y = graph_xy(gr)
     if scale is None:
         m, s = mean_sigma(y, err=False)
         scale = val / (y[where(x == min(x))[0]] if to_low_flux else m)
@@ -1275,7 +1201,7 @@ def markers(i, duo=False):
 def duo_markers(i):
     """ :returns full and open marker"""
     full_, open_ = [20, 21, 22, 23, 29, 33, 34], [24, 25, 26, 32, 30, 27, 28]
-    return list(concatenate(array([full_, open_]).T).tolist())[i]
+    return list(concatenate(array([full_, open_]).T).tolist())[i]  # noqa
 
 
 def set_palette(pal):
@@ -1326,28 +1252,26 @@ def show_line_styles():
         Draw.tlatex(.07, 1 / 11 * i, str(i), align=32)
 
 
-def ax_range(low: Any = None, high=None, fl=0., fh=0., h=None, rnd=False, thresh=None):
+def ax_range(low: Any = None, high=None, fl=0., fh=0., h=None, to_int=False, thresh=None):
     if type(low) in [list, ndarray]:
         utypes = [Variable, AffineScalarFunc]
         if len(low) == 2 and not is_ufloat(low[0]):
             return ax_range(low[0], low[1], fl, fh)
         m, s = mean_sigma(low, err=0)
         v = low[absolute(low - m) < thresh * s] if thresh is not None else low
-        return ax_range(min(v).n if type(v[0]) in utypes else min(v), max(v).n if type(v[0]) in utypes else max(v), fl, fh, rnd=rnd)
+        return ax_range(min(v).n if type(v[0]) in utypes else min(v), max(v).n if type(v[0]) in utypes else max(v), fl, fh, to_int=to_int)
     if h is not None:
         lo, hi = choose(thresh, low), choose(thresh, high)
         if 'TH2' in h.ClassName() or '2D' in h.ClassName():
             axes = enumerate([h.GetXaxis(), h.GetYaxis()], 1)
-            return [ax_range(ax.GetBinCenter(h.FindFirstBinAbove(lo, i)), ax.GetBinCenter(h.FindLastBinAbove(hi, i)), fl, fh, rnd=rnd) for i, ax in axes]
-        return ax_range(h.GetBinCenter(h.FindFirstBinAbove(lo)), h.GetBinCenter(h.FindLastBinAbove(hi)), fl, fh, rnd=rnd)
-    d = abs(high - low)
-    l, h = low - d * fl, high + d * fh
-    return [int(l), int(ceil(h))] if rnd else [l, h]
+            return [ax_range(ax.GetBinCenter(h.FindFirstBinAbove(lo, i)), ax.GetBinCenter(h.FindLastBinAbove(hi, i)), fl, fh, to_int=to_int) for i, ax in axes]
+        return ax_range(h.GetBinCenter(h.FindFirstBinAbove(lo)), h.GetBinCenter(h.FindLastBinAbove(hi)), fl, fh, to_int=to_int)
+    return increase_range(low, high, fl, fh, to_int)
 
 
 def find_z_range(h, q=None, z0=None):
     if q is not None:
-        x = get_2d_hist_vec(h, err=False, flat=True, z_sup=False)
+        x = hist_values_2d(h, err=False, flat=True, z_sup=False)
         zmin, zmax = choose(z0, quantile, a=x, q=1 - q), quantile(x, q)
         return [zmin, zmax]
 
@@ -1369,23 +1293,6 @@ def normalise_histo(histo, x_range=None, from_min=False):
     min_bin = h.GetMinimumBin() if from_min else 1
     integral = h.Integral(min_bin, h.GetNbinsX() - 2)
     return scale_histo(h, integral)
-
-
-def normalise_bins(h):
-    px = h.ProjectionX()
-    for xbin in range(h.GetNbinsX()):
-        for ybin in range(h.GetNbinsY()):
-            h.SetBinContent(xbin, ybin, h.GetBinContent(xbin, ybin) / (px.GetBinContent(xbin) if px.GetBinContent(xbin) else 1))
-    update_canvas()
-
-
-def make_bins(min_val, max_val=None, w=1, last=None, n=None, off=0):
-    bins = array(min_val, 'd')
-    if type(min_val) not in [ndarray, list]:
-        min_val, max_val = choose(min_val, 0, decider=max_val), choose(max_val, min_val)
-        last = [] if last is None else max_val if last == 1 else last
-        bins = append(arange(min_val, max_val, w, dtype='d'), last) if n is None else linspace(min_val, max_val, int(n) + 1, endpoint=True)
-    return [bins.size - 1, bins + off]
 
 
 def set_z_range(zmin, zmax):
@@ -1446,10 +1353,10 @@ def set_time_axis(histo, form='%H:%M', off=0, axis='X'):
     update_canvas()
 
 
-def find_mpv_fwhm(histo, bins=15):
+def find_mpv_fwhm(histo, nbins=15):
     max_bin = histo.GetMaximumBin()
     fit = TF1('fit', 'gaus', 0, 500)
-    histo.Fit('fit', 'qs0', '', histo.GetBinCenter(max_bin - bins), histo.GetBinCenter(max_bin + bins))
+    histo.Fit('fit', 'qs0', '', histo.GetBinCenter(max_bin - nbins), histo.GetBinCenter(max_bin + nbins))
     mpv = ufloat(fit.GetParameter(1), fit.GetParError(1))
     fwhm = histo.FindLastBinAbove(fit(mpv.n) / 2) - histo.FindFirstBinAbove(fit(mpv.n) / 2)
     return mpv, fwhm, mpv / fwhm
@@ -1461,8 +1368,8 @@ def get_fw_center(h):
 
 
 def find_mpv(h, r=.8, show_fit=False):
-    bins, y = [f(get_hist_vec(h, err=False)) for f in [argsort, sorted]]
-    bmax, ymax = (bins[-1] + 1, y[-1]) if y[-1] < 2 * y[-2] else (bins[-2] + 1, y[-2])
+    b, y = [f(hist_values(h, err=False)) for f in [argsort, sorted]]
+    bmax, ymax = (b[-1] + 1, y[-1]) if y[-1] < 2 * y[-2] else (b[-2] + 1, y[-2])
     fit_range = [f(ymax * r) for f in [h.FindFirstBinAbove, h.FindLastBinAbove]]
     fit_range = fit_range if diff(fit_range)[0] > 5 else (bmax + array([-5, 5])).tolist()
     yfit, xfit = FitRes(h.Fit('gaus', f'qs{"" if show_fit else"0"}', '', *[h.GetBinCenter(i) for i in fit_range]))[:2]  # fit the top with a gaussian to get better maxvalue
@@ -1537,18 +1444,18 @@ def hide_axis(axis):
 
 def remove_low_stat_bins(h, q=.9, thresh=None):
     if h.GetEntries() > 0:
-        e = get_2d_bin_entries(h) if 'Profile' in h.ClassName() else get_2d_hist_vec(h, err=False, z_sup=False, flat=False)
+        e = bins.entries_2d(h) if 'Profile' in h.ClassName() else hist_values_2d(h, err=False, z_sup=False, flat=False)
         e0 = e.flatten()
         t = quantile(e0[e0 > 0], q) if thresh is None else thresh * h.GetMaximum()
         e0[e0 < t] = 0
-        (set_2d_entries if 'Profile' in h.ClassName() else set_2d_values)(h, e0.reshape(e.shape))
+        (bins.set_2d_entries if 'Profile' in h.ClassName() else bins.set_2d_values)(h, e0.reshape(e.shape))
         update_canvas()
     return h
 
 
 def get_correlation_arrays(m1, m2, sx=0, sy=0, thresh=.1, flat=False):
-    a1, a2 = [get_2d_hist_vec(sm, err=False, flat=False) for sm in [m1, m2]]
-    n1, n2 = [get_2d_bin_entries(sm) for sm in [m1, m2]]
+    a1, a2 = [hist_values_2d(sm, err=False, flat=False) for sm in [m1, m2]]
+    n1, n2 = [bins.entries_2d(sm) for sm in [m1, m2]]
     a1[n1 < thresh * n1.max()] = 0  # set bins with low stats to 0
     a2[n2 < thresh * n2.max()] = 0
     a2 = roll(a2, [sx, sy], axis=[0, 1])  # shift through second array
@@ -1581,7 +1488,7 @@ def is_root_object(o):
 def np_profile(x, y, u=False):
     with catch_warnings():
         simplefilter("ignore")
-        m, s, n = [binned_statistic(x, y.astype('d'), bins=nbins(x), statistic=stat) for stat in ['mean', 'std', 'count']]
+        m, s, n = [binned_statistic(x, y.astype('d'), bins=bins.n(x), statistic=stat) for stat in ['mean', 'std', 'count']]
         c = n[0] > 1
         b, m, s, n = m[1], m[0][c], s[0][c], n[0][c]
         return ((b[:-1] + diff(b) / 2)[c], ) + ((arr2u(m, s / sqrt(n)), ) if u else (m, s / sqrt(n)))

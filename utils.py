@@ -12,7 +12,7 @@ from time import time
 from pathlib import Path
 from subprocess import check_call, check_output
 
-from numpy import array, zeros, count_nonzero, sqrt, average, full, all, quantile, arctan2, cos, sin, corrcoef, isfinite, mean
+from numpy import array, zeros, count_nonzero, sqrt, average, full, all, arctan2, cos, sin, corrcoef, mean
 from uncertainties import ufloat_fromstr, ufloat
 from uncertainties.core import Variable, AffineScalarFunc
 from inspect import getframeinfo, stack
@@ -190,15 +190,6 @@ def calc_eff(k=0, n=0, values=None):
     mode = k / n
     s = sqrt(((k + 1) / (n + 2) * (k + 2) / (n + 3) - ((k + 1) ** 2) / ((n + 2) ** 2)))
     return array([mode, max(s + (mode - m), 0), max(s - (mode - m), 0)]) * 100
-
-
-def freedman_diaconis(x):
-    return 2 * (quantile(x, .75) - quantile(x, .25)) / x.size ** (1 / 3)
-
-
-def bin_width(x):
-    w = freedman_diaconis(x[isfinite(x)])
-    return w if w else 3.49 * mean_sigma(x)[1].n / x.size ** (1 / 3)
 
 
 def cart2pol(x, y):
