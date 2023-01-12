@@ -1,3 +1,8 @@
+# --------------------------------------------------------
+#       LATEX UTILITY FUNCTIONS
+# created on November 16th 2021 by M. Reichmann
+# --------------------------------------------------------
+
 from numpy import array, column_stack
 
 
