@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-from functools import partial
 from ROOT import TF1, Math, TMath
 from numpy import exp
 from scipy.special import erf
@@ -17,8 +16,7 @@ class Fit(object):
         # Range and Values
         self.XMin, self.XMax = choose(fit_range, self.find_fit_range)
         if h is not None:
-            self.Values = get_h_values(h)
-            self.X = get_graph_x(h) if 'TGraph' in h.ClassName() else get_hist_args(h)
+            self.X, self.Values = h_xy(h)
 
         # Fit
         self.ParNames = choose(par_names, self.get_par_names())
@@ -141,12 +139,12 @@ class Expo(Fit):
         Fit.__init__(self, 'Exponential', h, None if xmin is None else [xmin, xmax], npx)
 
     def init_fit(self):
-        self.XMin, self.XMax = get_graph_x(self.Histo, err=False)[[0, -1]] if self.XMin == 0 else (self.XMin, self.XMax)
+        self.XMin, self.XMax = graph_x(self.Histo, err=False)[[0, -1]] if self.XMin == 0 else (self.XMin, self.XMax)
         return self.Draw.make_f(Draw.get_name('expo'), '[0] + [1] * TMath::Exp(-(x - [2]) / [3])', self.XMin, self.XMax)
 
     def set_start_values(self):
         if self.Histo is not None:
-            x, y = get_graph_vecs(self.Histo, err=False)
+            x, y = graph_xy(self.Histo, err=False)
             d, s, t = max(y) - min(y), sign(y[0] - y[-1]), x[-1] - x[0]
             self.set_parameters(y[-1] - s * d / 2, s * y[0], x[0], t / 2)
 
@@ -198,7 +196,7 @@ class Erf(Fit):
 
     def set_start_values(self):
         if self.Histo is not None:
-            x, y = get_graph_vecs(self.Histo, err=False)
+            x, y = graph_xy(self.Histo, err=False)
             x, y = x[(x >= self.XMin) & (x <= self.XMax)], y[(x >= self.XMin) & (x <= self.XMax)]
             self.set_parameters(mean(y), sign(y[-1] - y[0]) * (max(y) - min(y)) / 2, mean(x), (x[-1] - x[0]) / 5)
 
