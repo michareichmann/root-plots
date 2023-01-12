@@ -651,7 +651,7 @@ class Draw(object):
         return self.graph(x[y[:, 0] != -1], y[y[:, 0] != -1], **prep_kw(kwargs, title='Efficiency', y_tit='Efficiency [%]'))
 
     def pull(self, h, binning=None, ret_h=False, **dkw):
-        x = h if type(h) in [list, ndarray] else h_values(h)
+        x = h if type(h) in [list, ndarray] else h_y(h)
         m, s = mean_sigma(x)
         x = uarr2n((x - m) / s)
         th = self.distribution(x, binning, **prep_kw(dkw, rf=.5, lf=.5, n=2, x_tit=f'Normalised {h.GetYaxis().GetTitle()}'.split('[')[0] if hasattr(h, 'Class') else None))
@@ -1109,12 +1109,16 @@ def hist_xyz(h, err=True, flat=False, z_sup=True):
 # ----------------------------------------
 
 
-def h_values(h):
+def h_y(h):
     return graph_y(h) if 'Graph' in h.ClassName() else hist_values(h)
 
 
-def h_args(h):
+def h_x(h):
     return graph_x(h) if 'Graph' in h.ClassName() else bins.from_hist(h)
+
+
+def h_xy(h):
+    return h_x(h), h_y(h)
 
 
 def set_bin_labels(g, labels):
