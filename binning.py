@@ -2,7 +2,7 @@
 #       Functions for binning histograms
 # created on January 12th 2023 by M. Reichmann
 # --------------------------------------------------------
-from numpy import array, append, arange, linspace, diff, isfinite, quantile, ceil
+from numpy import array, append, arange, linspace, diff, isfinite, quantile, ceil, all
 from .utils import choose, ufloat, is_iter, mean_sigma
 
 
