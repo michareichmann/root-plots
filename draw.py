@@ -560,7 +560,7 @@ class Draw(object):
         if is_root_object(x):
             th = x
         else:
-            th = TH1F(Draw.get_name('h'), title, *choose(binning, bins.find, values=x, q=q, n=n, lfac=lf, rfac=rf, r=r, w=w, x0=x0, x1=x1))
+            th = TH1F(Draw.get_name('h'), title, *choose(binning, bins.find, values=x, q=q, nbins=n, lfac=lf, rfac=rf, r=r, w=w, x0=x0, x1=x1))
             fill_hist(th, x)
         format_histo(th, **prep_kw(kwargs, **Draw.mode(), fill_color=Draw.FillColor, y_tit='Number of Entries' if not th.GetYaxis().GetTitle() else None))
         self.histo(th, **prep_kw(kwargs, stats=None))
@@ -627,7 +627,7 @@ class Draw(object):
             th = x
         else:
             x, y = array(x, dtype='d'), array(y, dtype='d')
-            b = partial(bins.find, q=q, n=n, rfac=rf, lfac=lf, w=w)
+            b = partial(bins.find, q=q, nbins=n, rfac=rf, lfac=lf, w=w)
             th = TH2F(Draw.get_name('h2'), title, *(b(x, x0=x0, x1=x1) + b(y, x0=y0, x1=y1)) if binning is None else binning)
             fill_hist(th, x, y)
         th = self.rotate_2d(th, rot)
