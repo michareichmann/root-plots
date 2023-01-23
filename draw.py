@@ -1101,6 +1101,7 @@ def hist_values_2d(h, err=True, flat=True, z_sup=True):
     values = values if err else array([v.n for v in values])
     return (values[values != 0] if z_sup else values) if flat else values.reshape(len(ybins), len(xbins))
 
+
 def hist_xyz(h, err=True, flat=False, z_sup=True):
     (x, y), z_ = bins.h2d(h), hist_values_2d(h, err, flat=False, z_sup=False)
     cut = where(z_ != 0) if z_sup else [..., ...]
@@ -1297,6 +1298,14 @@ def normalise_histo(histo, x_range=None, from_min=False):
     min_bin = h.GetMinimumBin() if from_min else 1
     integral = h.Integral(min_bin, h.GetNbinsX() - 2)
     return scale_histo(h, integral)
+
+
+def normalise_bins(h):
+    px = h.ProjectionX()
+    for xbin in range(h.GetNbinsX()):
+        for ybin in range(h.GetNbinsY()):
+            h.SetBinContent(xbin, ybin, h.GetBinContent(xbin, ybin) / (px.GetBinContent(xbin) if px.GetBinContent(xbin) else 1))
+    update_canvas()
 
 
 def set_z_range(zmin, zmax):

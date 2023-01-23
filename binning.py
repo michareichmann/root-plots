@@ -91,6 +91,7 @@ def find_2d(x, y, lfac=.2, rfac=.2, q=.02, nb=1, lq=None, w=None, x0=None):
 # endregion
 # ----------------------------------------
 
+
 # ----------------------------------------
 # region HISTOGRAM
 def hn(h, axis='X'):
@@ -106,6 +107,7 @@ def from_hist(h, err=True, raw=False, axis='X'):
 
 def hx(h, err=True):
     return from_hist(h, err, axis='X')
+
 
 def hy(h, err=True):
     return from_hist(h, err, axis='Y')
