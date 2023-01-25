@@ -1103,7 +1103,7 @@ def hist_values_2d(h, err=True, flat=True, z_sup=True):
 
 
 def hist_xyz(h, err=True, flat=False, z_sup=True):
-    (x, y), z_ = bins.h2d(h), hist_values_2d(h, err, flat=False, z_sup=False)
+    (x, y), z_ = bins.h2d(h, arr=True), hist_values_2d(h, err, flat=False, z_sup=False)
     cut = where(z_ != 0) if z_sup else [..., ...]
     return x[cut[1]], y[cut[0]], z_[cut].flatten() if flat else z_[cut]
 # endregion HISTOGRAM VALUES
