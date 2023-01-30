@@ -31,7 +31,7 @@ def entries(h):
 
 
 def single_entries_2d(h, ix, iy, nx):
-    return int(h.GetBinEntries((nx + 2) * iy + ix))
+    return int((h.GetBinEntries if 'Prof' in h.ClassName() else h.GetBinContent)((nx + 2) * iy + ix))
 
 
 def entries_2d(h, flat=False):
@@ -116,6 +116,11 @@ def hy(h, err=True):
 def h2d(h, arr=False):
     x, y = [from_hist(h, raw=True, axis=ax) for ax in ['X', 'Y']]
     return [x, y] if arr else make2d(x, y)
+
+
+def h2dgrid(h):
+    x, y = [from_hist(h, err=False, raw=False, axis=ax) for ax in ['X', 'Y']]
+    return array([[ix, iy] for iy in y for ix in x]).T
 
 
 def set_2d_values(h, arr):
