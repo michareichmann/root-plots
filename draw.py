@@ -1032,7 +1032,7 @@ def set_2d_ranges(h, dx, dy):
 def arr2coods(a):
     i = indices(a.shape)
     cut = ~isnan(a).flatten()
-    return [v.flatten()[cut] for v in [i[0], i[1], a]]
+    return [v.flatten()[cut] for v in [i[1], i[0], a]]
 
 
 def fix_chi2(g, prec=.01, show=True):
@@ -1102,10 +1102,13 @@ def hist_values_2d(h, err=True, flat=True, z_sup=True):
     return (values[values != 0] if z_sup else values) if flat else values.reshape(len(ybins), len(xbins))
 
 
-def hist_xyz(h, err=True, flat=False, z_sup=True):
-    (x, y), z_ = bins.h2d(h, arr=True), hist_values_2d(h, err, flat=False, z_sup=False)
+def hist_xyz(h, err=True, flat=False, z_sup=True, grid=False):
+    z_ = hist_values_2d(h, err, flat=False, z_sup=False)
+    if grid:
+        return *bins.h2dgrid(h), z_.flatten()
+    x, y = bins.h2d(h, arr=True), hist_values_2d(h, err, flat=False, z_sup=False)
     cut = where(z_ != 0) if z_sup else [..., ...]
-    return x[cut[1]], y[cut[0]], z_[cut].flatten() if flat else z_[cut]
+    return x[cut[1]], y[cut[0]], z_[cut].flatten() if flat else z_[cut] if z_sup else z_
 # endregion HISTOGRAM VALUES
 # ----------------------------------------
 
