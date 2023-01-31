@@ -518,13 +518,13 @@ class Draw(object):
         return leg
 
     @staticmethod
-    def histo(th, show=True, lm=None, rm=None, bm=None, tm=None, m=None, draw_opt=None, w=1, h=1, logx=None, logy=None, logz=None, grid=None, gridy=None, gridx=None, phi=None, theta=None,
+    def histo(th, show=True, lm=None, rm=None, bm=None, tm=None, m=None, draw_opt=None, wx=1, hy=1, logx=None, logy=None, logz=None, grid=None, gridy=None, gridx=None, phi=None, theta=None,
               leg=None, ldraw=None, canvas=None, sumw2=None, stats=False, all_pads=False, info_leg=True, **kwargs):
-        w += .16 if not Draw.Title and w == 1 else 0  # rectify if there is no title
+        wx += .16 if not Draw.Title and wx == 1 else 0  # rectify if there is no title
         th.Sumw2(sumw2) if hasattr(th, 'Sumw2') and sumw2 is not None else do_nothing()
         Draw.set_show(show)
         c = get_last_canvas() if canvas is None and 'same' in str(draw_opt) else canvas
-        c = Draw.canvas(th.GetTitle().split(';')[0], None, None, w, h, logx, logy, logz, gridx or grid, gridy or grid, show=show) if c is None else c
+        c = Draw.canvas(th.GetTitle().split(';')[0], None, None, wx, hy, logx, logy, logz, gridx or grid, gridy or grid, show=show) if c is None else c
         Draw.set_pad_margins(c, *[lm, rm, bm, tm] if m is None else m)
         do([c.SetLogx, c.SetLogy, c.SetLogz], [logx, logy, logz])
         do([c.SetGridx, c.SetGridy], [gridx or grid, gridy or grid])
@@ -549,8 +549,8 @@ class Draw(object):
     @staticmethod
     def mode(m=1, **kwargs):
         d = {1: {'tit_size': .05, 'lab_size': .045, 'y_off': 1.35},
-             2: {'w': 1.5, 'h': .75, 'tit_size': .06, 'lab_size': .05, 'y_off': .7, 'lm': .08, 'bm': .15},
-             3: {'w': 1.5, 'h': .5, 'tit_size': .09, 'lab_size': .08, 'y_off': .45, 'lm': .08, 'bm': .18, 'rm': .03, 'x_tit': 'Time [ns]', 'y_tit': 'Signal [mV]', 'markersize': .5},
+             2: {'wx': 1.5, 'hy': .75, 'tit_size': .06, 'lab_size': .05, 'y_off': .7, 'lm': .08, 'bm': .15},
+             3: {'wx': 1.5, 'hy': .5, 'tit_size': .09, 'lab_size': .08, 'y_off': .45, 'lm': .08, 'bm': .18, 'rm': .03, 'x_tit': 'Time [ns]', 'y_tit': 'Signal [mV]', 'markersize': .5},
              4: {'tit_size': .05, 'lab_size': .045, 'tick_size': 0, 'l_off_y': 10, 'l_off_x': 10, 'center_x': True, 'center_y': True, 'y_off': .5, 'x_off': .5, 'lm': .066, 'bm': .066},
              5: {'tit_size': .08, 'lab_size': .07, 'y_off': 1.02, 'lm': .17, 'bm': .15}
              }[m]
@@ -657,7 +657,7 @@ class Draw(object):
         th = self.distribution(x, binning, **prep_kw(dkw, rf=.5, lf=.5, n=2, x_tit=f'Normalised {h.GetYaxis().GetTitle()}'.split('[')[0] if hasattr(h, 'Class') else None))
         return th if ret_h else mean_sigma(x[x != 0])
 
-    def stack(self, histos, title='', leg_titles=None, leg_head=None, scale=False, fill=None, ldraw='l', w=.2, **dkw):
+    def stack(self, histos, title='', leg_titles=None, leg_head=None, scale=False, fill=None, ldraw='l', lw=.2, **dkw):
         s = THStack(Draw.get_name('s'), title)
         for h in histos:
             s.Add(h, 'hist')
@@ -668,7 +668,7 @@ class Draw(object):
         h0 = histos[0]
         self.histo(s, show=False, save=False, draw_opt='nostack')
         format_histo(s, **prep_kw(dkw, x_tit=h0.GetXaxis().GetTitle(), y_tit=h0.GetYaxis().GetTitle(), **Draw.mode(1, y_off=h0.GetYaxis().GetTitleOffset())))
-        leg = self.legend(histos, leg_titles, ldraw, header=leg_head, w=w) if leg_titles is not None else None
+        leg = self.legend(histos, leg_titles, ldraw, header=leg_head, w=lw) if leg_titles is not None else None
         self.histo(s, **prep_kw(dkw, draw_opt='nostack', leg=leg, lm=get_last_canvas().GetLeftMargin()))
         return s
 
