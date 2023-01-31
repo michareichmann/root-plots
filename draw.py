@@ -1106,7 +1106,7 @@ def hist_xyz(h, err=True, flat=False, z_sup=True, grid=False):
     z_ = hist_values_2d(h, err, flat=False, z_sup=False)
     if grid:
         return *bins.h2dgrid(h), z_.flatten()
-    x, y = bins.h2d(h, arr=True), hist_values_2d(h, err, flat=False, z_sup=False)
+    x, y = bins.h2d(h, arr=True)
     cut = where(z_ != 0) if z_sup else [..., ...]
     return x[cut[1]], y[cut[0]], z_[cut].flatten() if flat else z_[cut] if z_sup else z_
 # endregion HISTOGRAM VALUES
