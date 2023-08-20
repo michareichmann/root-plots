@@ -19,7 +19,7 @@ class SaveDraw(Draw):
     ServerMountDir: Path = None
     Dummy = TFile(str(Draw.Dir.joinpath('dummy.root')), 'RECREATE')
 
-    def __init__(self, analysis=None, results_dir=None, sub_dir=''):
+    def __init__(self, analysis=None, results_dir='', sub_dir=''):
         self.Analysis = analysis
         super(SaveDraw, self).__init__(self.find_config())
 
