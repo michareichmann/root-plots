@@ -850,12 +850,12 @@ class Draw(object):
 
 
 # ----------------------------------------
-# region FORMATTING
+# region FORMATTING TODO: make separate class
 def format_histo(histo, name=None, title=None, x_tit=None, y_tit=None, z_tit=None, marker=None, color=None, line_color=None, line_style=None, markersize=None, x_off=None, y_off=None, z_off=None,
                  lw=None, fill_color=None, fill_style=None, stats=None, tit_size=None, lab_size=None, xls=None, yls=None, l_off_y=None, l_off_x=None, draw_first=False,
                  x_range=None, xr=None, y_range=None, yr=None, z_range=None, zr=None,
-                 sumw2=None, do_marker=True, style=None, ndivx=None, ndivy=None, ncont=None, tick_size=None, t_ax_off=None, tform='%H:%M', center_y=False, center_x=False, yax_col=None,
-                 normalise=None, pal=None, rebin=None, y_ticks=None, x_ticks=None, z_ticks=None, opacity=None, center_tit=None, **kwargs):
+                 sumw2=None, style=None, ndivx=None, ndivy=None, ncont=None, tick_size=None, t_ax_off=None, tform='%H:%M', center_y=False, center_x=False, yax_col=None,
+                 normalise=None, pal=None, rebin=None, y_ticks=None, x_ticks=None, z_ticks=None, opacity=None, center_tit=None, bar_w=None, bar_off=None, **kwargs):
     _ = kwargs
     h = histo
     if draw_first:
@@ -871,29 +871,14 @@ def format_histo(histo, name=None, title=None, x_tit=None, y_tit=None, z_tit=Non
         normalise_histo(h)
     try:
         do(h.SetStats, stats)
+        do(h.SetContour, ncont)
     except AttributeError or ReferenceError:
         pass
     do(h.Rebin, rebin) if hasattr(h, 'Rebin') else do_nothing()
-    # markers
-    try:
-        if do_marker:
-            do(h.SetMarkerStyle, marker)
-            do(h.SetMarkerColor, color)
-            do(h.SetMarkerSize, markersize)
-    except AttributeError or ReferenceError:
-        pass
-    # lines/fill
-    try:
-        h.SetLineColor(line_color) if line_color is not None else h.SetLineColor(color) if color is not None else do_nothing()
-        do(h.SetLineWidth, lw)
-        do(h.SetLineStyle, line_style)
-        h.SetFillColor(fill_color) if fill_color is not None and opacity is None else do_nothing()
-        h.SetFillColorAlpha(fill_color, opacity) if fill_color is not None and opacity is not None else do_nothing()
-        h.SetFillStyle(fill_style) if fill_style is not None else do_nothing()
-        h.SetFillStyle(style) if style is not None else do_nothing()
-        h.SetContour(ncont) if ncont is not None else do_nothing()
-    except AttributeError or ReferenceError:
-        pass
+    format_markers(h, marker, color, markersize)
+    format_bar(h, bar_w, bar_off)
+    format_lines(h, choose(line_color, color), lw, line_style)
+    format_fill(h, fill_color, opacity, choose(style, fill_style))
     # axes
     try:
         x_args = [x_tit, x_off, tit_size, choose(center_tit, center_x), choose(xls,  lab_size), l_off_x, choose(xr, x_range), ndivx, choose(x_ticks, tick_size), ]
@@ -907,6 +892,38 @@ def format_histo(histo, name=None, title=None, x_tit=None, y_tit=None, z_tit=Non
     do(h.Sumw2, sumw2) if hasattr(h, 'Sumw2') else do_nothing()
     update_canvas()
     return h
+
+
+def format_bar(h, w, off):
+    try:
+        do(h.SetBarWidth, w)
+        do(h.SetBarOffset, off)
+    except AttributeError or ReferenceError:
+        pass
+
+
+def format_markers(h, style, color, size):
+    if style or size:
+        try:
+            do(h.SetMarkerStyle, style)
+            do(h.SetMarkerColor, color)
+            do(h.SetMarkerSize, size)
+        except AttributeError or ReferenceError:
+            pass
+
+
+def format_lines(h, color, w, style):
+    if hasattr(h, 'SetLineColor'):
+        do(h.SetLineColor, color)
+        do(h.SetLineWidth, w)
+        do(h.SetLineStyle, style)
+
+
+def format_fill(h, color, opacity, style):
+    if hasattr(h, 'SetFillColor'):
+        if color is not None:
+            h.SetFillColor(color) if opacity is None else h.SetFillColorAlpha(color, opacity)
+        do(h.SetFillStyle, style)
 
 
 def set_statbox(x2=None, y2=None, h=None, w=.3, entries=False, m=False, rms=False, all_stat=False, fit=False, center_x=False, center_y=False, form=None, stats=True, **kw):
