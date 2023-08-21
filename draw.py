@@ -31,7 +31,7 @@ class FitRes(np.ndarray):
         is_tf1 = 'TF1' in f.ClassName()
         self.Fit = f
         self.NPar = f.GetNpar() if is_tf1 else f.NPar()
-        self.Pars = array([f.GetParameter(i) for i in range(self.NPar)] if is_tf1 else list(f.Parameters()))
+        self.Pars = np.array([f.GetParameter(i) for i in range(self.NPar)] if is_tf1 else list(f.Parameters()))
         self.Errors = [f.GetParError(i) for i in range(self.NPar)] if is_tf1 else list(f.Errors())
         self.Names = [f.GetParName(i) if is_tf1 else f.ParName(i) for i in range(self.NPar)]
         self.vChi2 = f.GetChisquare() if is_tf1 else f.Chi2()
@@ -63,7 +63,7 @@ class FitRes(np.ndarray):
         return 'TF1' in self.Fit.ClassName()
 
     def get_pars(self, err=True):
-        return array([ufloat(p, e) for p, e in zip(self.Pars, self.Errors)]) if err else self.Pars
+        return np.array([ufloat(p, e) for p, e in zip(self.Pars, self.Errors)]) if err else self.Pars
 
     def get_chi2(self):
         return self.vChi2 / self.vNdf
@@ -89,12 +89,12 @@ class FitRes(np.ndarray):
 
 
 def get_color_gradient():
-    stops = array([0., .5, 1], 'd')
-    green = array([0. / 255., 200. / 255., 80. / 255.], 'd')
-    blue = array([0. / 255., 0. / 255., 0. / 255.], 'd')
-    red = array([180. / 255., 200. / 255., 0. / 255.], 'd')
+    stops = np.array([0., .5, 1], 'd')
+    green = np.array([0. / 255., 200. / 255., 80. / 255.], 'd')
+    blue = np.array([0. / 255., 0. / 255., 0. / 255.], 'd')
+    red = np.array([180. / 255., 200. / 255., 0. / 255.], 'd')
     color_gradient = TColor.CreateGradientColorTable(len(stops), stops, red, green, blue, 255)
-    return array([color_gradient + ij for ij in range(255)])
+    return np.array([color_gradient + ij for ij in range(255)])
 
 
 class Draw(object):
@@ -320,7 +320,7 @@ class Draw(object):
 
     @staticmethod
     def line(x1, x2, y1, y2, color=1, width=1, style=1, show=True):
-        line = TCutG(Draw.get_name('l'), 2, array([x1, x2], 'd'), array([y1, y2], 'd'))
+        line = TCutG(Draw.get_name('l'), 2, np.array([x1, x2], 'd'), np.array([y1, y2], 'd'))
         line.SetLineColor(color)
         line.SetLineWidth(width)
         line.SetLineStyle(style)
@@ -349,7 +349,7 @@ class Draw(object):
     def polygon(x, y, line_color=1, width=1, style=1, name=None, fillstyle=None, fill_color=None, opacity=None, show=True, closed=True):
         if get_object(name) is not None:  # check if name already exists
             get_object(name).Clear()
-        s, x, y = (len(x) + 1, np.append(x, x[0]).astype('d'), np.append(y, y[0]).astype('d')) if closed else (len(x), array(x, 'd'), array(y, 'd'))
+        s, x, y = (len(x) + 1, np.append(x, x[0]).astype('d'), np.append(y, y[0]).astype('d')) if closed else (len(x), np.array(x, 'd'), np.array(y, 'd'))
         line = TCutG(choose(name, Draw.get_name('poly')), s, x, y)
         format_histo(line, line_color=line_color, lw=width, line_style=style, fill_color=fill_color, fill_style=fillstyle, opacity=opacity)
         line.SetFillStyle(Draw.Solid if fill_color else 0)
@@ -369,7 +369,7 @@ class Draw(object):
 
     @staticmethod
     def fypolygon(f, x1, x2, y, name=None, n=100, **kwargs):
-        x, y = array([(x, f(x)) for x in np.linspace(x1, x2, n)] + [(x2, y), (x1, y)]).T
+        x, y = np.array([(x, f(x)) for x in np.linspace(x1, x2, n)] + [(x2, y), (x1, y)]).T
         Draw.polygon(x, y, name=name, **kwargs)
 
     def segment(self, x, y, w, ox=0, oy=0, color=2, **dkw):
@@ -589,7 +589,7 @@ class Draw(object):
 
     def trend(self, x, y, title='', bw=None, n=20, **dkw):
         x, y = [np.array_split(i, n if bw is None else np.arange(bw, x.size, bw)) for i in [x, y]]
-        x = abs(array([mean(i) + array([0, -i[0], -i[-1]]) for i in x]))
+        x = abs(array([mean(i) + np.array([0, -i[0], -i[-1]]) for i in x]))
         y = [mean_sigma(i)[0] for i in y]
         return self.graph(x, y, title, **dkw)
 
@@ -597,13 +597,27 @@ class Draw(object):
         if y is None:
             p = x
         else:
-            x, y = array(x, dtype='d'), array(y, dtype='d')
+            x, y = np.array(x, dtype='d'), np.array(y, dtype='d')
             p = TProfile(Draw.get_name('p'), title, *choose(binning, bins.find, lfac=lf, rfac=rf, values=x, q=q, w=w, x0=x0))
             fill_hist(p, x, y)
         p = self.make_graph_from_profile(p) if graph else p
         format_histo(p, **prep_kw(dkw, **Draw.mode(), fill_color=Draw.FillColor))
         self.histo(p, **prep_kw(dkw, stats=choose(get_kw('stats', dkw), set_statbox, entries=True, w=.25)))
         return p
+
+    def sum_hist(self, x, y=None, binning=None, title='', q=.02, lf=.2, rf=.2, w=None, x0=None, **dkw):
+        """ creates a histogram summing up all values in a bin """
+        if y is None:
+            h = x
+        else:
+            x, y = np.array(x, dtype='d'), np.array(y, dtype='d')
+            binning = choose(binning, bins.find, lfac=lf, rfac=rf, values=x, q=q, w=w, x0=x0)
+            e = np.histogram(x, binning[1])[0]  # number of entries in each bin
+            x = [np.sum(v) for v in np.split(y, np.unique(np.cumsum(e)))]
+            h = fill_hist(TH1F(Draw.get_name('sh'), title, *binning), x, set_bins=True)
+        format_histo(h, **prep_kw(dkw, **Draw.mode(), fill_color=Draw.FillColor, stats=False, y_range=[0, 1.1 * h.GetMaximum()]))
+        self.histo(h, **prep_kw(dkw, stats=choose(get_kw('stats', dkw), set_statbox, entries=True, w=.25)))
+        return h
 
     def prof2d(self, x, y=None, zz=None, binning=None, title='', qz=None, z0=None, rot=None, mirror=None, centre=None, **dkw):
         if is_root_object(x):
@@ -626,7 +640,7 @@ class Draw(object):
         if y is None:
             th = x
         else:
-            x, y = array(x, dtype='d'), array(y, dtype='d')
+            x, y = np.array(x, dtype='d'), np.array(y, dtype='d')
             b = partial(bins.find, q=q, nbins=n, rfac=rf, lfac=lf, w=w)
             th = TH2F(Draw.get_name('h2'), title, *(b(x, x0=x0, x1=x1) + b(y, x0=y0, x1=y1)) if binning is None else binning)
             fill_hist(th, x, y)
@@ -647,7 +661,7 @@ class Draw(object):
 
     def efficiency(self, x, e, binning=None, q=.02, w=None, x0=None, **kwargs):
         p = self.profile(x, e, binning, q=q, w=w, x0=x0, show=False)
-        x, y = bins.hx(p), array([calc_eff(p0 * n, n) if n else [-1, 0, 0] for p0, n in [[p.GetBinContent(ibin), p.GetBinEntries(ibin)] for ibin in range(1, p.GetNbinsX() + 1)]])
+        x, y = bins.hx(p), np.array([calc_eff(p0 * n, n) if n else [-1, 0, 0] for p0, n in [[p.GetBinContent(ibin), p.GetBinEntries(ibin)] for ibin in range(1, p.GetNbinsX() + 1)]])
         return self.graph(x[y[:, 0] != -1], y[y[:, 0] != -1], **prep_kw(kwargs, title='Efficiency', y_tit='Efficiency [%]'))
 
     def pull(self, h, binning=None, ret_h=False, **dkw):
@@ -692,8 +706,8 @@ class Draw(object):
         return m
 
     def pie(self, labels, values=None, colors=None, title='', offset=0, show=True, flat=False, draw_opt=None, **kwargs):
-        labels, (values, colors) = (labels.keys(), array(list(labels.values())).T) if values is None else (labels, (values, choose(colors, Draw.get_colors(len(labels)))))
-        pie = TPie(self.get_name('pie'), title, len(labels), array(values, 'f'), array(colors, 'i'))
+        labels, (values, colors) = (labels.keys(), np.array(list(labels.values())).T) if values is None else (labels, (values, choose(colors, Draw.get_colors(len(labels)))))
+        pie = TPie(self.get_name('pie'), title, len(labels), np.array(values, 'f'), np.array(colors, 'i'))
         for i, label in enumerate(labels):
             pie.SetEntryRadiusOffset(i, offset)
             pie.SetEntryLabel(i, label)
@@ -785,13 +799,13 @@ class Draw(object):
     def make_tgraph(x=None, y=None, **kwargs):
         if len(list(x)) != len(list(y)) or not len(x):
             return warning('Arrays have different size!')
-        d = [[make_list(i) for i in lst] for lst in [x, y]]  # make all entries arrays
+        d = [[make_list(i) for i in lst] for lst in [x, y]]  # make all entries np.arrays
         if any([i.size == 3 for lst in d for i in lst]):
-            x, y = array(array([[[v[0].n, v[0].s, v[0].s] if is_ufloat(v[0]) else append(v, zeros(3 - v.size)) for v in lst] for lst in d]).tolist())  # noqa
+            x, y = np.array(array([[[v[0].n, v[0].s, v[0].s] if is_ufloat(v[0]) else append(v, zeros(3 - v.size)) for v in lst] for lst in d]).tolist())  # noqa
             x, ex1, ex2, y, ey1, ey2 = [a.astype('d') for a in np.concatenate([x.T, y.T])]
             g = TGraphAsymmErrors(len(x), x, y, ex1, ex2, ey1, ey2)
         else:
-            x, y = array([[[v[0].n, v[0].s] if is_ufloat(v[0]) else np.append(v, zeros(2 - v.size)) for v in lst] for lst in d])
+            x, y = np.array([[[v[0].n, v[0].s] if is_ufloat(v[0]) else np.append(v, zeros(2 - v.size)) for v in lst] for lst in d])
             x, ex, y, ey = [a.astype('d') for a in np.concatenate([x.T, y.T])]
             g = TGraphErrors(len(x), x, y, ex, ey)
         format_histo(g, Draw.get_name('g'), **prep_kw(kwargs, marker=20, markersize=1.2))
@@ -937,7 +951,7 @@ def format_statbox(th, x2=None, y2=None, d=.01, h=None, w=.3, entries=False, m=F
         gStyle.SetOptFit(True)
     p = None if 'TF1' in th.ClassName() else next((o for o in th.GetListOfFunctions() if 'Pave' in o.ClassName()), None)
     if p is not None:
-        stats = np.ones(3, 'i') if all_stat else array([rms, m, entries], 'i')
+        stats = np.ones(3, 'i') if all_stat else np.array([rms, m, entries], 'i')
         nentries = stats.nonzero()[0].size + (f.GetNpar() + 1 if fit and f is not None else 0)
         [getattr(p, f'Set{n}NDC')(i) for i, n in zip(get_stat_pos(c, nentries, x2, y2, d, h, w, center_x, center_y, bottom, left), ['X1', 'Y1', 'X2', 'Y2'])]
         p.SetOptStat(choose(stat_opt, int('100000{}{}{}0'.format(*stats * 2))))
@@ -997,16 +1011,20 @@ def format_frame(frame):
 # ----------------------------------------
 
 
-def fill_hist(h, x, y=None, zz=None):
+def fill_hist(h, x, y=None, zz=None, set_bins=False):
+    if set_bins:
+        for i, v in enumerate(x, 1):
+            h.SetBinContent(i, np.array(v, dtype='d'))
+        return h
     if len(x) and is_ufloat(x[0]):
         for i, v in enumerate(x, 1):
             h.SetBinContent(i, v.n)
             h.SetBinError(i, v.s)
         return
-    x, y, zz = array(x).astype('d'), array(y).astype('d'), array(zz).astype('d')
+    x, y, zz = np.array(x).astype('d'), np.array(y).astype('d'), np.array(zz).astype('d')
     if len(x.shape) > 1:
-        y = array(x[:, 1])
-        x = array(x[:, 0])
+        y = np.array(x[:, 1])
+        x = np.array(x[:, 0])
     if not x.size:  # return if there are no entries
         return
     if h.ClassName() == 'TProfile2D':
@@ -1021,6 +1039,7 @@ def fill_hist(h, x, y=None, zz=None):
     else:
         for i in range(x.size):
             h.Fill(x[i], y[i], zz[i])
+    return h
 
 
 def set_2d_ranges(h, dx, dy):
@@ -1051,21 +1070,21 @@ def fix_chi2(g, prec=.01, show=True):
 
 
 def make_darray(values):
-    return array([v.n for v in values] if is_ufloat(values[0]) else values, dtype='d')
+    return np.array([v.n for v in values] if is_ufloat(values[0]) else values, dtype='d')
 
 
 # ----------------------------------------
 # region GRAPH VALUES
 def graph_values(g, m, err=False, as_u=True):
     if is_iter(g):
-        return array([v for ig in g for v in graph_values(ig, m, err)])
+        return np.array([v for ig in g for v in graph_values(ig, m, err)])
     v = np.frombuffer(getattr(g, f'Get{m}')())
     if 'Asym' in g.ClassName() and err:
-        e = array([np.frombuffer(getattr(g, f'GetE{m}{att}')(), count=g.GetN()) for att in ['low', 'high']]).T
+        e = np.array([np.frombuffer(getattr(g, f'GetE{m}{att}')(), count=g.GetN()) for att in ['low', 'high']]).T
         return make_ufloat(v, mean(e, axis=1)) if as_u else np.column_stack([v, e])
     elif 'Error' in g.ClassName() and err:
         e = np.frombuffer(getattr(g, f'GetE{m}')())
-        return make_ufloat(v, e) if as_u else array([v, e]).T
+        return make_ufloat(v, e) if as_u else np.array([v, e]).T
     return v
 
 
@@ -1086,19 +1105,19 @@ def graph_y(g, err=True, as_u=True):
 # ----------------------------------------
 # region HISTOGRAM VALUES
 def hist_values(h, err=True):
-    return array([ufloat(h.GetBinContent(i), h.GetBinError(i)) if err else h.GetBinContent(i) for i in bins.hn(h)])
+    return np.array([ufloat(h.GetBinContent(i), h.GetBinError(i)) if err else h.GetBinContent(i) for i in bins.hn(h)])
 
 
 def hist_xy(h, err=True, raw=False):
     if type(h) in [np.ndarray, list]:
-        return array([tup for ip in h for tup in array(hist_xy(ip, err, raw)).T]).T
+        return np.array([tup for ip in h for tup in np.array(hist_xy(ip, err, raw)).T]).T
     return bins.from_hist(h, err, raw), hist_values(h, err)
 
 
 def hist_values_2d(h, err=True, flat=True, z_sup=True):
     xbins, ybins = bins.hn(h, axis='X'), bins.hn(h, axis='Y')
-    values = array([ufloat(h.GetBinContent(xbin, ybin), h.GetBinError(xbin, ybin)) for ybin in ybins for xbin in xbins])
-    values = values if err else array([v.n for v in values])
+    values = np.array([ufloat(h.GetBinContent(xbin, ybin), h.GetBinError(xbin, ybin)) for ybin in ybins for xbin in xbins])
+    values = values if err else np.array([v.n for v in values])
     return (values[values != 0] if z_sup else values) if flat else values.reshape(len(ybins), len(xbins))
 
 
@@ -1133,7 +1152,7 @@ def set_bin_labels(g, labels):
 
 
 def make_box_args(x1, y1, x2, y2):
-    return array([[x1, x1, x2, x2], [y1, y2, y2, y1]])
+    return np.array([[x1, x1, x2, x2], [y1, y2, y2, y1]])
 
 
 def make_poly_args(x, y, last_x=None):
@@ -1142,7 +1161,7 @@ def make_poly_args(x, y, last_x=None):
 
 def make_star(cx=0, cy=0, r=1, n=5):
     coods = pol2cart(np.tile([r, r / (2 * cos(np.pi / n) + 1)], n), np.linspace(0, 2 * np.pi, 2 * n, endpoint=False) - np.pi / 2)
-    return (coods.T + array([cx, cy])).T
+    return (coods.T + np.array([cx, cy])).T
 
 
 def set_titles(status=True):
@@ -1180,7 +1199,7 @@ def get_3d_correlations(h, opt='yz', thresh=.25, err=True, z_supp=True):
     for ibin in range(1, h.GetNbinsX() + 1):
         h.GetXaxis().SetRange(ibin, ibin + 1)
         corr.append(remove_low_stat_bins(h.Project3D(opt), thresh=thresh).GetCorrelationFactor())
-    c = array(corr)
+    c = np.array(corr)
     return (bins.hx(h, err)[c != 0], c[c != 0]) if z_supp else (bins.hx(h, err), c)
 
 
@@ -1214,7 +1233,7 @@ def duo_markers(i):
 
 def set_palette(pal):
     Draw.Palette = pal
-    gStyle.SetPalette(*[len(pal), array(pal).astype('i')] if is_iter(pal) and type(pal) is not str else [pal])
+    gStyle.SetPalette(*[len(pal), np.array(pal).astype('i')] if is_iter(pal) and type(pal) is not str else [pal])
 
 
 def n_pal(n):
@@ -1387,7 +1406,7 @@ def find_mpv(h, r=.8, show_fit=False):
     b, y = [f(hist_values(h, err=False)) for f in [np.argsort, sorted]]
     bmax, ymax = (b[-1] + 1, y[-1]) if y[-1] < 2 * y[-2] else (b[-2] + 1, y[-2])
     fit_range = [f(ymax * r) for f in [h.FindFirstBinAbove, h.FindLastBinAbove]]
-    fit_range = fit_range if np.diff(fit_range)[0] > 5 else (bmax + array([-5, 5])).tolist()
+    fit_range = fit_range if np.diff(fit_range)[0] > 5 else (bmax + np.array([-5, 5])).tolist()
     yfit, xfit = FitRes(h.Fit('gaus', f'qs{"" if show_fit else"0"}', '', *[h.GetBinCenter(i) for i in fit_range]))[:2]  # fit the top with a gaussian to get better maxvalue
     return (xfit, yfit) if abs(yfit - ymax) < .2 * ymax else (h.GetBinCenter(int(bmax)) + ufloat(0, h.GetBinWidth(1) / 2), ymax * ufloat(1, .02))  # check if fit value is reasonable ...
 
@@ -1430,7 +1449,7 @@ def scale_histo(histo, value=None, to_max=False, x_range=None):
 
 def find_2d_centre(h, thresh=.5):
     px, py = h.ProjectionX(), h.ProjectionY()
-    return array([mean([p.GetBinCenter(b) for b in [p.FindFirstBinAbove(p.GetMaximum() * thresh), p.FindLastBinAbove(p.GetMaximum() * thresh)]]) for p in [px, py]])
+    return np.array([mean([p.GetBinCenter(b) for b in [p.FindFirstBinAbove(p.GetMaximum() * thresh), p.FindLastBinAbove(p.GetMaximum() * thresh)]]) for p in [px, py]])
 
 
 def get_2d_centre_ranges(h, dx, dy=None, thresh=.5):
@@ -1474,7 +1493,7 @@ def get_correlation_arrays(m1, m2, sx=0, sy=0, thresh=.1, flat=False):
     n1, n2 = [bins.entries_2d(sm) for sm in [m1, m2]]
     a1[n1 < thresh * n1.max()] = 0  # set bins with low stats to 0
     a2[n2 < thresh * n2.max()] = 0
-    a2 = np.roll(a2, [sx, sy], axis=[0, 1])  # shift through second array
+    a2 = np.roll(a2, [sx, sy], axis=[0, 1])  # shift through second np.array
     return (a1.flatten(), a2.flatten()) if flat else (a1, a2)
 
 
@@ -1485,7 +1504,7 @@ def correlate_maps(m1, m2, sx=0, sy=0, thresh=.1):
 
 def correlate_all_maps(m1, m2, thresh=.1):
     a1, a2 = get_correlation_arrays(m1, m2, thresh=thresh)
-    return array([[correlate_maps(a1, a2, x, y) for x in range(a1.shape[0])] for y in range(a1.shape[1])])
+    return np.array([[correlate_maps(a1, a2, x, y) for x in range(a1.shape[0])] for y in range(a1.shape[1])])
 
 
 def set_root_warnings(status, fatal=False):
