@@ -61,6 +61,7 @@ def from_p(x):
 def make(xmin, xmax=None, w=1, last=False, nb=None, off=0):
     bins = array(xmin, 'd')
     if not is_iter(xmin):
+        xmax = choose(xmax, xmin + nb * w) if nb is not None else xmax
         xmin, xmax = sorted([xmin, choose(xmax, 0)])
         bins = arange(xmin, xmax + (w if last else 0), w, dtype='d') if nb is None else linspace(xmin, xmax, int(nb) + 1, endpoint=True, dtype='d')
     return [bins.size - 1, bins + off]
