@@ -45,6 +45,7 @@ def from_uvec(x):
 
 
 def from_vec(x, centre=False):
+    x = np.array(x, 'd')
     if centre:
         w0 = (x[1] - x[0])
         x = append(x, x[-1] + w0)
