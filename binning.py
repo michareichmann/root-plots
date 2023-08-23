@@ -82,7 +82,7 @@ def find_range(values, lfac=.2, rfac=.2, q=.02, lq=None):
 
 
 def find(values, lfac=.2, rfac=.2, q=.02, nbins=1, lq=None, w=None, x0=None, x1=None, r=None):
-    if all([values == values[0]]):
+    if np.all([values == values[0]]):
         return [3, np.array([-.15, -.05, .05, 0.15], 'd') * values[0] + values[0]]
     w, (xmin, xmax) = choose(w, width(values) * nbins), find_range(values, lfac, rfac, q, lq) if r is None else np.array(r, 'd')
     bins = np.arange(choose(x0, xmin), choose(x1, xmax) + w, w, dtype='d')
@@ -90,7 +90,7 @@ def find(values, lfac=.2, rfac=.2, q=.02, nbins=1, lq=None, w=None, x0=None, x1=
 
 
 def find_2d(x, y, lfac=.2, rfac=.2, q=.02, nb=1, lq=None, w=None, x0=None):
-    return sum([find(i, lfac, rfac, q, nb, lq, w, x0) for i in [x, y]], start=[])
+    return np.sum([find(i, lfac, rfac, q, nb, lq, w, x0) for i in [x, y]], start=[])
 # endregion
 # ----------------------------------------
 
