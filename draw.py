@@ -9,14 +9,13 @@ from inspect import signature
 from typing import Any
 from warnings import catch_warnings, simplefilter
 
+import numpy as np
 from ROOT import TGraphErrors, TGaxis, TLatex, TGraphAsymmErrors, TCanvas, gStyle, TLegend, TArrow, TPad, TCutG, TLine, TPaveText, TPaveStats, TH1F, TEllipse, TColor, TProfile
 from ROOT import TProfile2D, TH2F, TH3F, THStack, TMultiGraph, TPie, gROOT, TF1
 from scipy.stats import binned_statistic
 from screeninfo import get_monitors, Monitor, common
 
-import numpy as np
 import plotting.binning as bins
-from .binning import increase_range, quantile
 from .info import Info
 from .utils import *
 
@@ -1310,13 +1309,13 @@ def ax_range(low: Any = None, high=None, fl=0., fh=0., h=None, to_int=False, thr
             axes = enumerate([h.GetXaxis(), h.GetYaxis()], 1)
             return [ax_range(ax.GetBinCenter(h.FindFirstBinAbove(lo, i)), ax.GetBinCenter(h.FindLastBinAbove(hi, i)), fl, fh, to_int=to_int) for i, ax in axes]
         return ax_range(h.GetBinCenter(h.FindFirstBinAbove(lo)), h.GetBinCenter(h.FindLastBinAbove(hi)), fl, fh, to_int=to_int)
-    return increase_range(low, high, fl, fh, to_int)
+    return bins.increase_range(low, high, fl, fh, to_int)
 
 
 def find_z_range(h, q=None, z0=None):
     if q is not None:
         x = hist_values_2d(h, err=False, flat=True, z_sup=False)
-        zmin, zmax = choose(z0, quantile, a=x, q=1 - q), quantile(x, q)
+        zmin, zmax = choose(z0, np.quantile, a=x, q=1 - q), np.quantile(x, q)
         return [zmin, zmax]
 
 
@@ -1498,7 +1497,7 @@ def remove_low_stat_bins(h, q=.9, thresh=None):
     if h.GetEntries() > 0:
         e = bins.entries_2d(h) if 'Profile' in h.ClassName() else hist_values_2d(h, err=False, z_sup=False, flat=False)
         e0 = e.flatten()
-        t = quantile(e0[e0 > 0], q) if thresh is None else thresh * h.GetMaximum()
+        t = np.quantile(e0[e0 > 0], q) if thresh is None else thresh * h.GetMaximum()
         e0[e0 < t] = 0
         (bins.set_2d_entries if 'Profile' in h.ClassName() else bins.set_2d_values)(h, e0.reshape(e.shape))
         update_canvas()

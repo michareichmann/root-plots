@@ -2,16 +2,17 @@
 #       Functions for binning histograms
 # created on January 12th 2023 by M. Reichmann
 # --------------------------------------------------------
-from numpy import array, append, arange, linspace, diff, isfinite, quantile, ceil, all
+import numpy as np
+
 from .utils import choose, ufloat, is_iter, mean_sigma
 
 
 def freedman_diaconis(x):
-    return 2 * (quantile(x, .75) - quantile(x, .25)) / x.size ** (1 / 3)
+    return 2 * (np.quantile(x, .75) - np.quantile(x, .25)) / x.size ** (1 / 3)
 
 
 def width(x):
-    w = freedman_diaconis(x[isfinite(x)])
+    w = freedman_diaconis(x[np.isfinite(x)])
     return w if w else 3.49 * mean_sigma(x)[1].n / x.size ** (1 / 3)
 
 
@@ -23,11 +24,11 @@ def increase_range(low, high, fl, fh, to_int=False):
     """increases the range [low, high] by the given factors [fl] on the low end and [fh] on the high end."""
     d = abs(high - low)
     l, h = low - d * fl, high + d * fh
-    return [int(l), int(ceil(h))] if to_int else [l, h]
+    return [int(l), int(np.ceil(h))] if to_int else [l, h]
 
 
 def entries(h):
-    return array([h.GetBinEntries(i) for i in range(1, h.GetNbinsX() + 1)], 'i')
+    return np.array([h.GetBinEntries(i) for i in range(1, h.GetNbinsX() + 1)], 'i')
 
 
 def single_entries_2d(h, ix, iy, nx):
@@ -36,35 +37,35 @@ def single_entries_2d(h, ix, iy, nx):
 
 def entries_2d(h, flat=False):
     nx, ny = h.GetNbinsX(), h.GetNbinsY()
-    e = array([[single_entries_2d(h, ix, iy, nx) for ix in range(1, nx + 1)] for iy in range(1, ny + 1)], 'i')
+    e = np.array([[single_entries_2d(h, ix, iy, nx) for ix in range(1, nx + 1)] for iy in range(1, ny + 1)], 'i')
     return e.flatten() if flat else e
 
 
 def from_uvec(x):
-    return [x.size, append([i.n - i.s for i in x], x[-1].n + x[-1].s).astype('d')]
+    return [x.size, np.append([i.n - i.s for i in x], x[-1].n + x[-1].s).astype('d')]
 
 
 def from_vec(x, centre=False):
     x = np.array(x, 'd')
     if centre:
         w0 = (x[1] - x[0])
-        x = append(x, x[-1] + w0)
-        x -= append(w0 / 2, diff(x) / 2)
+        x = np.append(x, x[-1] + w0)
+        x -= np.append(w0 / 2, np.diff(x) / 2)
     return [x.size - 1, x]
 
 
 def from_p(x):
     d = x[-1] - x[-2]
-    x = append(x, [x[-1] + d, x[-1] + 2 * d])
-    return [x.size - 2, x[:-1] - diff(x) / 2]
+    x = np.append(x, [x[-1] + d, x[-1] + 2 * d])
+    return [x.size - 2, x[:-1] - np.diff(x) / 2]
 
 
 def make(xmin, xmax=None, w=1, last=False, nb=None, off=0):
-    bins = array(xmin, 'd')
+    bins = np.array(xmin, 'd')
     if not is_iter(xmin):
         xmax = choose(xmax, xmin + nb * w) if nb is not None else xmax
         xmin, xmax = sorted([xmin, choose(xmax, 0)])
-        bins = arange(xmin, xmax + (w if last else 0), w, dtype='d') if nb is None else linspace(xmin, xmax, int(nb) + 1, endpoint=True, dtype='d')
+        bins = np.arange(xmin, xmax + (w if last else 0), w, dtype='d') if nb is None else np.linspace(xmin, xmax, int(nb) + 1, endpoint=True, dtype='d')
     return [bins.size - 1, bins + off]
 
 
@@ -76,15 +77,15 @@ def make2d(x, y, wx=1, wy=1, nx=None, ny=None, last=True):
 # ----------------------------------------
 # region FIND
 def find_range(values, lfac=.2, rfac=.2, q=.02, lq=None):
-    q = quantile(values[isfinite(values)], [choose(lq, q), 1 - q])
+    q = np.quantile(values[np.isfinite(values)], [choose(lq, q), 1 - q])
     return increase_range(*[min(values), max(values)] if q[0] == q[1] else q, lfac, rfac)
 
 
 def find(values, lfac=.2, rfac=.2, q=.02, nbins=1, lq=None, w=None, x0=None, x1=None, r=None):
     if all([values == values[0]]):
-        return [3, array([-.15, -.05, .05, 0.15], 'd') * values[0] + values[0]]
-    w, (xmin, xmax) = choose(w, width(values) * nbins), find_range(values, lfac, rfac, q, lq) if r is None else array(r, 'd')
-    bins = arange(choose(x0, xmin), choose(x1, xmax) + w, w, dtype='d')
+        return [3, np.array([-.15, -.05, .05, 0.15], 'd') * values[0] + values[0]]
+    w, (xmin, xmax) = choose(w, width(values) * nbins), find_range(values, lfac, rfac, q, lq) if r is None else np.array(r, 'd')
+    bins = np.arange(choose(x0, xmin), choose(x1, xmax) + w, w, dtype='d')
     return [bins.size - 1, bins]
 
 
@@ -103,8 +104,8 @@ def hn(h, axis='X'):
 def from_hist(h, err=True, raw=False, axis='X'):
     ax = getattr(h, f'Get{axis.title()}axis')()
     if raw:
-        return array([ax.GetBinLowEdge(i) for i in range(1, ax.GetNbins() + 2)], 'd')
-    return array([ufloat(ax.GetBinCenter(ibin), ax.GetBinWidth(ibin) / 2) if err else ax.GetBinCenter(ibin) for ibin in range(1, ax.GetNbins() + 1)])
+        return np.array([ax.GetBinLowEdge(i) for i in range(1, ax.GetNbins() + 2)], 'd')
+    return np.array([ufloat(ax.GetBinCenter(ibin), ax.GetBinWidth(ibin) / 2) if err else ax.GetBinCenter(ibin) for ibin in range(1, ax.GetNbins() + 1)])
 
 
 def hx(h, err=True):
@@ -122,7 +123,7 @@ def h2d(h, arr=False):
 
 def h2dgrid(h):
     x, y = [from_hist(h, err=False, raw=False, axis=ax) for ax in ['X', 'Y']]
-    return array([[ix, iy] for iy in y for ix in x]).T
+    return np.array([[ix, iy] for iy in y for ix in x]).T
 
 
 def set_2d_values(h, arr):
