@@ -1334,7 +1334,7 @@ def normalise_histo(histo, x_range=None, from_min=False):
     x_axis = h.GetXaxis()
     x_axis.SetRangeUser(*x_range) if x_range is not None else do_nothing()
     min_bin = h.GetMinimumBin() if from_min else 1
-    integral = h.Integral(min_bin, h.GetNbinsX() - 2)
+    integral = h.Integral(min_bin, h.GetNbinsX())
     return scale_histo(h, integral)
 
 
