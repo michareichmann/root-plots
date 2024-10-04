@@ -1,0 +1,37 @@
+[build-system]
+requires = ['setuptools>=61.0']
+build-backend = 'setuptools.build_meta'
+
+[project]
+dynamic = ['version']
+name = 'rootplots'
+authors = [
+    {name = 'Michael Reichmann', email = 'micha.reichmann@gmail.com'}
+]
+maintainers = [
+    {name = 'Michael Reichmann', email = 'micha.reichmann@gmail.com'}
+]
+description = 'Wrapper for CERN-ROOT plotting in python'
+dependencies = [
+    'uncertainties',
+    'screeninfo',
+    'numpy',
+    'scipy',
+    'pytz'
+]
+classifiers=[
+   'Programming Language :: Python :: 3',
+   'Programming Language :: Python :: 3.11',
+   'Operating System :: OS Independent',
+]
+readme = "README.md"
+
+[tool.setuptools]
+packages = ['rootplots']
+py-modules = []
+
+[project.urls]
+Repository = 'https://github.com/michareichmann/rootplots'
+
+[tool.setuptools.dynamic]
+version = {attr = 'rootplots.__version__'}
