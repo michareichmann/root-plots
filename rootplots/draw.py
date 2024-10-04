@@ -15,7 +15,7 @@ from ROOT import TProfile2D, TH2F, TH3F, THStack, TMultiGraph, TPie, gROOT, TF1
 from scipy.stats import binned_statistic
 from screeninfo import get_monitors, Monitor, common
 
-import plotting.binning as bins
+from .import binning as bins
 from .info import Info
 from .utils import *
 
@@ -124,7 +124,7 @@ class Draw(object):
         if Draw.Config is None:  # only run the setup once
             # Basics
             Draw.Verbose = verbose
-            Draw.Config = Config(choose(config, default=join(Draw.Dir, 'main.ini')))
+            Draw.Config = Config(choose(config, default=Draw.Dir.parent.joinpath('config', 'main.ini')))
 
             # Settings
             Draw.Title = Draw.Config.get_value('SAVE', 'activate title', default=True)

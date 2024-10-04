@@ -154,7 +154,7 @@ def heading(txt, size=1, *opts_):
 
 
 def script(src, *opts_):
-    return tag('script', '', f'src="{src}"', *opts_)
+    return tag('script', '', f'rootplots="{src}"', *opts_)
 
 
 def dropdown(name, items, targets, n, active=False, ind=1):
@@ -172,7 +172,7 @@ def dropdown(name, items, targets, n, active=False, ind=1):
 
 
 def opts(rs=None, cs=None, src=None, h=None, w=None, active=None, new_tab=None):
-    return make_opt('rowspan', rs) + make_opt('colspan', cs) + make_opt('src', src) + make_opt('height', h) + make_opt('width', w) + make_opt('class', 'active' if active else None) \
+    return make_opt('rowspan', rs) + make_opt('colspan', cs) + make_opt('rootplots', src) + make_opt('height', h) + make_opt('width', w) + make_opt('class', 'active' if active else None) \
            + make_opt('target', '_blank' if new_tab else None)
 
 

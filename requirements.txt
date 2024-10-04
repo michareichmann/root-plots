@@ -1,2 +1,5 @@
 uncertainties
 screeninfo
+numpy
+scipy
+pytz
